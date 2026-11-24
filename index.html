@@ -30,9 +30,9 @@ body{font-family:var(--cond);color:var(--ink);
 .screen.off{opacity:0;pointer-events:none;transform:scale(.98)}
 
 /* Cartel rojo enlozado */
-/* plano, sin relieve: es un cartel, no un botón */
+/* Hundido (sombra hacia adentro), sin borde oscuro: es un cartel, no un botón */
 .sign{position:relative;margin:10px 10px 6px;padding:8px 18px 9px;border-radius:8px;text-align:center;
-  background:#b8262c;border:none}
+  background:#a82227;border:none;box-shadow:inset 0 2px 6px rgba(0,0,0,.45),inset 0 -1px 0 rgba(255,255,255,.12)}
 .sign::before,.sign::after{content:"";position:absolute;top:50%;width:9px;height:9px;margin-top:-4.5px;border-radius:50%;
   background:radial-gradient(circle at 35% 35%,#f3e3b8,#a58a52);box-shadow:0 1px 1px rgba(0,0,0,.5)}
 .sign::before{left:7px}.sign::after{right:7px}
@@ -56,16 +56,21 @@ button.tag:disabled{opacity:.5}
 .top .sign h1{font-size:clamp(16px,4.8vw,21px)}
 .iconbtn{width:44px;height:44px;padding:0!important;flex:none}
 .hud{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:8px;padding:8px 10px 6px}
-/* Contadores: planos, sin borde ni sombra, para que no parezcan botones */
-.hud .stat{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:4px 6px 5px;min-height:52px;
-  border-radius:6px;background:rgba(29,94,92,.55);color:var(--cream);font-family:var(--cond);font-weight:600;text-transform:uppercase}
-.hud .k{font-size:11px;letter-spacing:1.2px;opacity:.8}
-.hud .v{font-family:var(--slab);font-size:22px;line-height:1.05;letter-spacing:0}
-.hud .moves{background:#f2b632;color:var(--ink)}
-.hud .moves .k{opacity:1}
-.hud .moves .v{font-size:30px}
-.hud .moves.low{background:var(--red);color:var(--cream)}
-.hud .moves.low .v{animation:beat .8s infinite}
+/* Contadores: hundidos, sin borde, para que no parezcan botones. Misma pieza en juego, apertura, ganar y perder. */
+.stat{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:4px 6px 5px;min-height:52px;
+  border-radius:6px;background:#e6d8b2;color:var(--ink);font-family:var(--cond);font-weight:600;text-transform:uppercase;
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.3),inset 0 -1px 0 rgba(255,255,255,.4)}
+.stat .k{font-size:11px;letter-spacing:1.2px;color:#6b4a2b}
+.stat .v{font-family:var(--slab);font-size:22px;line-height:1.05;letter-spacing:0}
+.stat.moves{background:#a82227;color:var(--cream);box-shadow:inset 0 2px 6px rgba(0,0,0,.45),inset 0 -1px 0 rgba(255,255,255,.12)}
+.stat.moves .k{color:#ffd9b0}
+.stat.moves .v{font-size:30px}
+.stat.moves.low .v{animation:beat .8s infinite}
+.stat.moves.zero{background:#7d1519}
+.hud.res{grid-template-columns:1fr 1fr;padding:0;margin:2px 0 6px}
+.hud.res.one{grid-template-columns:minmax(0,160px);justify-content:center;margin:8px 0}
+.stat .v.bump{animation:bump .18s ease-out}
+@keyframes bump{50%{transform:scale(1.2)}}
 .bar{height:8px;margin:0 12px 6px;border-radius:4px;background:rgba(0,0,0,.25);overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f2b632,#e8603a);transition:width .4s}
 #board{position:relative;flex:1;min-height:0;margin:0 2px;touch-action:none;overflow:hidden}
@@ -90,9 +95,11 @@ button.tag:disabled{opacity:.5}
 .tapa .volanta{font-family:var(--cond);font-weight:700;font-size:13px;letter-spacing:1.4px;text-transform:uppercase;color:var(--red)}
 .tapa h2{font-family:var(--slab);font-weight:400;font-size:30px;line-height:1.05;margin:4px 0 8px}
 .tapa p{margin:0 0 6px;font-size:16px;line-height:1.35;font-weight:500}
-.tapa .tag{width:100%;margin-top:10px}
-.bottom{display:flex;gap:10px;justify-content:center;padding:8px 10px calc(12px + env(safe-area-inset-bottom))}
-.bottom .tag{flex:1;max-width:170px}
+.tapa .btns{display:flex;gap:10px;margin-top:10px}
+.tapa .btns .red{flex:1}
+.tapa .btns .small{font-size:13px;padding:0 12px}
+.bottom{display:flex;gap:8px;justify-content:center;padding:8px 10px calc(12px + env(safe-area-inset-bottom))}
+.bottom .tag{flex:1;max-width:150px;padding:0 8px}
 
 /* Estantes */
 .shelf{position:absolute;border-radius:6px 6px 3px 3px;
@@ -121,7 +128,10 @@ button.tag:disabled{opacity:.5}
   -webkit-user-drag:none;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
 .it.back{z-index:1;filter:brightness(.4) saturate(.5)}
 .it.back .bob{animation:none}
-.it.back.ready{animation:ready 1.1s ease-in-out infinite}
+.it.back2{z-index:0;filter:brightness(.25) saturate(.4)}
+/* El bandoneón es el sprite más oscuro (brillo medio 60 contra 90–140 del resto): adelante se aclara para no confundirse con lo de atrás */
+.it[data-t="bandoneon"]:not(.back):not(.back2) img{filter:brightness(1.55) saturate(1.1) drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+.it.back2 .bob{animation:none}
 .it.deep{opacity:0;z-index:0}
 .it.sel{z-index:10}
 .it.sel .bob{animation:selb .5s ease-in-out infinite alternate}
@@ -144,7 +154,6 @@ button.tag:disabled{opacity:.5}
 @keyframes hintb{from{transform:translateY(0) scale(1);filter:drop-shadow(0 0 0 #fff6c0)}to{transform:translateY(-10%) scale(1.08);filter:drop-shadow(0 0 6px #fff6c0)}}
 @keyframes matchb{to{transform:translateY(-18%) scale(1.22)}}
 @keyframes pop{0%{opacity:1}100%{opacity:0;transform:var(--t) scale(.1) rotate(25deg)}}
-@keyframes ready{0%,100%{filter:brightness(.4) saturate(.5)}50%{filter:brightness(.75) saturate(.8)}}
 @keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
 @keyframes glow{0%,100%{box-shadow:inset 0 0 0 3px rgba(255,247,214,.2),inset 0 8px 12px rgba(0,0,0,.18)}50%{box-shadow:inset 0 0 0 3px #fff7d6,inset 0 8px 12px rgba(0,0,0,.18)}}
 
@@ -182,12 +191,18 @@ button.tag:disabled{opacity:.5}
 .card .body{padding:14px 18px 18px}
 .card p{margin:6px 0;font-size:16px;line-height:1.35;font-weight:500}
 .card .big{font-family:var(--slab);font-size:34px;margin:4px 0}
-.stars{display:flex;justify-content:center;gap:6px;margin:4px 0 6px}
-.stars svg{width:46px;height:46px}
+.stars{display:flex;justify-content:center;gap:6px;margin:8px 0 4px}
+.stars svg{width:54px;height:54px}
 .stars svg.on{animation:starpop .45s cubic-bezier(.3,1.6,.5,1) both}
 @keyframes starpop{from{transform:scale(0) rotate(-40deg)}}
 .card .btns{display:flex;gap:10px;margin-top:12px}
 .card .btns .tag{flex:1}
+.procbtn{display:block;width:100%;min-height:56px;font-size:20px;margin:0 0 10px}
+.lvl.done{opacity:1}
+.dots{display:inline-flex;gap:8px;padding:18px 0}
+.dots i{width:12px;height:12px;border-radius:50%;background:#a82227;animation:dot 1s infinite ease-in-out}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,100%{transform:scale(.5);opacity:.4}50%{transform:scale(1);opacity:1}}
 </style>
 </head>
 <body>
@@ -220,6 +235,9 @@ button.tag:disabled{opacity:.5}
         <button class="tag" id="btnRetry">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
           Reiniciar</button>
+        <button class="tag" id="btnUndo" disabled>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+          Deshacer</button>
         <button class="tag red" id="btnHint">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>
           Pista <span id="hHints">3</span></button>
@@ -228,7 +246,7 @@ button.tag:disabled{opacity:.5}
   </div>
   <div id="modal" class="off"></div>
 </div>
-<script>/* Motor del Kiosco de Página/12: reglas + solucionador.
+<script id="engsrc">/* Motor del Kiosco de Página/12: reglas + solucionador.
    Estado compacto: {m: combos hechos, sh: [{f:[t|null x3], b:[[t|null x3], ...], k: combos para abrir persiana (0 = abierto)}]} */
 (function (root) {
   const E = {};
@@ -349,6 +367,11 @@ button.tag:disabled{opacity:.5}
 (() => {
 const $ = s => document.querySelector(s);
 const wait = ms => new Promise(r => setTimeout(r, ms));
+/* ---------- modo prueba (?prueba o ?prueba=1-20): registra mouse y jugadas ---------- */
+const TEST = (() => { const m = location.search.match(/[?&]prueba(?:=(\d+)-(\d+))?/); return m ? { from: +(m[1] || 1), to: +(m[2] || 20) } : null; })();
+const T0 = performance.now(), LOGQ = [], LOGALL = [];
+let PROC = null; // modo procedural (se define más abajo)
+function LOG(e, d) { if (PROC && G && G.proc) PROC.ev(e, d || {}); if (!TEST) return; const o = Object.assign({ t: Math.round(performance.now() - T0), e, lv: G ? G.n : 0, at: G ? G.att : 0 }, d || {}); LOGQ.push(o); LOGALL.push(o); }
 const NAMES = {diario:'Diario Página/12',radio:'Radio AM 750',sifon:'Sifón',alfajor:'Alfajor',mate:'Mate',casete:'Casete NO',bondi:'Bondi del 12',
   pinguino:'Pingüino de bodegón',empanada:'Empanada',ancho:'Ancho de espadas',damajuana:'Damajuana',pava:'Pava enlozada',chupetin:'Chupetín',
   joystick:'Joystick Jugá 12',vinilo:'Vinilo Radar',balero:'Balero',bombo:'Bombo legüero',pelota:'Pelota de potrero',bandoneon:'Bandoneón',subte:'Subte A',maquina:'Máquina de escribir'};
@@ -356,14 +379,14 @@ const ANIM = {diario:'sway',radio:'pulse',sifon:'wob',alfajor:'bob',mate:'wob',c
   damajuana:'wob',pava:'wob',chupetin:'swing',joystick:'pulse',vinilo:'sway',balero:'bounce',bombo:'pulse',pelota:'bounce',bandoneon:'squeeze',subte:'swing',maquina:'pulse'};
 const COLORS = ['#74b9e6','#ffffff','#c2272d','#f2b632','#2f8a87'];
 // Glosario fijo (ver GDD, sección 9.1). Cada cosa se nombra siempre igual: góndola (todos los estantes), estante,
-// producto, frente, atrás, trío, movimiento, persiana, rotativa, pliego, envuelto, estrellas, pista, reiniciar, lugar libre.
+// producto, frente, atrás, venta, movimiento, persiana, rotativa, pliego, envuelto, estrellas, pista, reiniciar, lugar libre.
 const TIPS = {
   1:'Arrastrá un producto a otro estante. Juntá 3 iguales en un estante y se venden.',
   2:'Los productos oscuros están atrás. Vaciá el frente del estante y pasan adelante.',
   3:'Usá pocos movimientos para ganar más estrellas.',
-  16:'Hacé los tríos que marca la persiana para abrirla.',
+  16:'Hacé las ventas que marca la persiana para abrirla.',
   31:'Los pliegos de la rotativa funcionan como estantes. Usalos mientras están en pantalla.',
-  35:'Hacé un trío en el mismo estante o en uno pegado para abrir los envueltos.'
+  35:'Hacé una venta en el mismo estante o en uno pegado para abrir los envueltos.'
 };
 const NEW = {1:'Cómo jugar', 2:'Nuevo: productos de atrás', 3:'Estrellas', 16:'Nuevo: persiana', 31:'Nuevo: rotativa', 35:'Nuevo: envueltos'};
 const HEADS = {
@@ -406,7 +429,7 @@ const STAR = on => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8
 /* ---------- progreso ---------- */
 let P = { best: {}, open: 1, all: false, snd: true };
 try { Object.assign(P, JSON.parse(localStorage.getItem('kiosco-p12') || '{}')); } catch (e) {}
-const save = () => { try { localStorage.setItem('kiosco-p12', JSON.stringify(P)); } catch (e) {} };
+const save = () => { if (TEST) return; try { localStorage.setItem('kiosco-p12', JSON.stringify(P)); } catch (e) {} };
 
 /* ---------- sonido ---------- */
 let AC = null;
@@ -426,7 +449,9 @@ const sfx = {
   match: () => [523, 659, 784].forEach((f, i) => tone(f, .22, 'triangle', .11, i * .06)),
   win: () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, .25, 'square', .05, i * .1)),
   lose: () => [392, 330, 262].forEach((f, i) => tone(f, .3, 'sawtooth', .04, i * .16)),
-  open: () => { for (let i = 0; i < 6; i++) tone(160 + i * 40, .06, 'square', .03, i * .05); }
+  open: () => { for (let i = 0; i < 6; i++) tone(160 + i * 40, .06, 'square', .03, i * .05); },
+  tick: k => tone(600 + Math.min(k, 20) * 18, .05, 'triangle', .05),
+  star: i => [784, 988, 1175].slice(0, 2).forEach((f, j) => tone(f + i * 120, .18, 'triangle', .09, j * .07))
 };
 function sndIcon() { $('#sndWave').style.opacity = P.snd ? 1 : .15; }
 
@@ -434,7 +459,7 @@ function sndIcon() { $('#sndWave').style.opacity = P.snd ? 1 : .15; }
 function buildMap() {
   const box = $('#mapScroll');
   const sects = [[1, 5, 'Para arrancar'], [6, 15, 'Góndola llena'], [16, 30, 'Persianas'], [31, 34, 'Rotativa'], [35, 40, 'Envueltos']];
-  let h = `<div class="tag intro">Vaciá la góndola antes de quedarte sin movimientos.</div>`;
+  let h = `<button class="tag red procbtn" id="btnProc">Modo procedural</button><div class="tag intro">Vaciá la góndola antes de quedarte sin movimientos.</div>`;
   for (const [a, b, name] of sects) {
     h += `<div class="sect">${name}</div>`;
     for (let r = a; r <= b; r += 5) {
@@ -451,6 +476,7 @@ function buildMap() {
   h += `<div class="mapfoot"><button class="tag" id="btnAll">${P.all ? 'Cerrar niveles (prueba)' : 'Abrir todos (prueba)'}</button><button class="tag" id="btnReset">Borrar progreso</button></div>`;
   box.innerHTML = h;
   box.querySelectorAll('.lvl').forEach(b => b.onclick = () => { if (!b.disabled) startLevel(+b.dataset.n); });
+  $('#btnProc').onclick = () => PROC.map();
   $('#btnAll').onclick = () => { P.all = !P.all; save(); buildMap(); };
   $('#btnReset').onclick = () => { P.best = {}; P.open = 1; save(); buildMap(); };
 }
@@ -461,14 +487,17 @@ let G = null;
 const els = new Map();
 const cnt = r => r.reduce((a, x) => a + (x != null), 0);
 
-function startLevel(n, quiet) {
-  const L = LEVELS[n - 1];
+// Lobj: nivel del modo procedural (si viene, no se usa LEVELS)
+function startLevel(n, quiet, Lobj) {
+  if (TEST && !Lobj) { TEST.att = TEST.att || {}; TEST.att[n] = (TEST.att[n] || 0) + 1; }
+  const L = Lobj || LEVELS[n - 1];
   let id = 0;
   const wk = new Set((L.wrap || []).map(a => a.join(':')));
   const mk = (t, w) => t == null ? null : { id: id++, t, w };
   G = { n, L, sh: L.shelves.map((x, i) => ({ f: x.f.map((t, s) => mk(t, wk.has(`${i}:0:${s}`))),
           b: x.b.map((r, l) => r.map((t, s) => mk(t, wk.has(`${i}:${l + 1}:${s}`)))), k: x.k, belt: !!x.belt })),
-        m: 0, used: 0, score: 0, off: 0, hints: 3, lock: new Set(), endT: 0, sel: null, over: false, total: 0, tip: TIPS[n] || null };
+        m: 0, used: 0, score: 0, off: 0, hints: 3, lock: new Set(), endT: 0, hist: [], sel: null, over: false, total: 0,
+        proc: !!Lobj, tip: Lobj ? (Lobj.tip || null) : (TIPS[n] || null) };
   G.nReg = L.cols * L.rows; G.nb = L.belt || 0;
   G.total = G.sh.reduce((a, x) => a + cnt(x.f) + x.b.reduce((c, r) => c + cnt(r), 0), 0);
   const board = $('#board');
@@ -484,29 +513,35 @@ function startLevel(n, quiet) {
   hideTip(); G.tipH = 0;
   if (G.tip) { showTip(); G.tipH = tipEl.offsetHeight + 10; }
   requestAnimationFrame(() => { layout(); render(true); if (G.n === 1) setTimeout(() => G && G.n === 1 && !G.used && showMove(findHint()), 600); });
+  if (G.proc) PROC.begin();
+  if (TEST && !G.proc) { G.att = TEST.att[n]; LOG('nivel', { n, movs: L.moves, par: L.par, estado: compact() }); }
   if (!quiet) showTapa();
 }
 function showTapa() {
-  const [h] = TITLES[G.n] || [''];
+  const [h] = G.proc ? [G.L.title || ''] : (TITLES[G.n] || ['']);
+  const vol = G.proc ? (G.L.volanta || '') : (NEW[G.n] || '');
   const m = $('#modal');
   m.innerHTML = `<div class="tapa" role="dialog" aria-modal="true" aria-label="Nivel ${G.n}">
-    <div class="mast"><b>Página/12</b><span>Nivel ${G.n} de ${LEVELS.length}</span></div><div class="redline"></div>
-    ${NEW[G.n] ? `<div class="volanta">${NEW[G.n]}</div>` : ''}<h2>${h}</h2>
+    <div class="mast"><b>Página/12</b><span>Nivel ${G.n}${G.proc ? '' : ' de ' + LEVELS.length}</span></div><div class="redline"></div>
+    ${vol ? `<div class="volanta">${vol}</div>` : ''}<h2>${h}</h2>
     ${G.tip ? `<p>${G.tip}</p>` : ''}
-    <p>Vaciá la góndola en <b>${G.L.moves}</b> movimientos.</p>
-    <p style="font-size:14px;color:#555">3 estrellas: ${G.L.par} movimientos o menos.</p>
-    <button class="tag red">Jugar</button></div>`;
+    <div class="btns"><button class="tag small" data-t="map">Niveles</button><button class="tag red" data-t="play">Jugar</button></div></div>`;
   m.classList.remove('off');
-  m.querySelector('button').onclick = () => m.classList.add('off');
+  m.querySelector('[data-t="play"]').onclick = () => { m.classList.add('off'); LOG('jugar'); };
+  m.querySelector('[data-t="map"]').onclick = () => { m.classList.add('off'); goMap(); };
 }
+// vuelve al mapa del modo que se está jugando
+function goMap() { if (G && G.proc) PROC.map(); else { buildMap(); show('#map'); } }
 
 function layout() {
   const board = $('#board'), W = board.clientWidth, H = board.clientHeight;
-  const { cols } = G.L, rows = G.L.rows + (G.nb ? 1 : 0), gx = 6, plank = 13, ratio = 1.5, over = 0.96, peek = .24;
+  const { cols } = G.L, rows = G.L.rows + (G.nb ? 1 : 0), gx = 6, plank = 13, ratio = 1.5, over = 0.96, peek = .34;
   let gy = 10;
   const tipH = G.tipH || 0, HH = H - tipH;
   let iw = Math.min((W - (cols - 1) * gx) / cols * .985 / 3, 84);
-  const sh = iw => iw * ratio * (1 + peek) + plank + 4;
+  // alto del estante: el frente más un escalón por cada capa de atrás visible (hasta 2)
+  const depth = Math.max(1, ...G.sh.map(x => Math.min(2, x.b.length)));
+  const sh = iw => iw * ratio * (1 + peek * depth) + plank + 4;
   while (rows * sh(iw) + (rows - 1) * gy > HH - 6 && iw > 18) iw -= .5;
   const ih = iw * ratio, shelfW = iw * 3 / .985, shelfH = sh(iw), vw = iw * over;
   // reparto el alto que sobra entre las filas para que la góndola llene la pantalla
@@ -537,9 +572,10 @@ function slotXY(i, s, layer) {
   const g = G.geo, r = shelfRect(i);
   const x = r.x + g.pad + s * g.iw - (g.vw - g.iw) / 2, base = r.y + r.h - g.plank + 1;
   if (layer === 0) return { x, y: base - g.ih, sc: 1 };
-  // atrás: si el lugar de adelante está libre, baja hasta el borde del estante (sigue detrás y oscuro)
-  const front = G.sh[i] && G.sh[i].f[s];
-  return { x, y: base - g.ih - (front ? g.ih * g.peek : 0), sc: .84 };
+  // atrás: sube un escalón por cada producto que tiene delante en ese lugar; sin nada delante, baja al borde (sigue detrás y oscuro)
+  const x0 = G.sh[i]; let ahead = 0;
+  if (x0) { if (x0.f[s]) ahead++; for (let l = 0; l < layer - 1; l++) if (x0.b[l] && x0.b[l][s]) ahead++; }
+  return { x, y: base - g.ih - ahead * g.ih * g.peek, sc: layer === 1 ? .84 : .72 };
 }
 function elFor(it) {
   let el = els.get(it.id);
@@ -550,14 +586,14 @@ function elFor(it) {
     el.style.setProperty('--l', (-Math.random() * 3).toFixed(2) + 's');
     el.style.width = G.geo.vw + 'px'; el.style.height = G.geo.ih + 'px';
     el.innerHTML = `<div class="bob"><img src="${it.w ? 'sprites/envuelto.svg' : 'sprites/' + it.t + '.webp'}" alt="${it.w ? 'Producto envuelto en diario' : NAMES[it.t]}" draggable="false"></div>`;
-    if (it.w) el.classList.add('wrapped');
+    if (it.w) el.classList.add('wrapped'); else el.dataset.t = it.t;
     el.it = it;
     $('#board').appendChild(el); els.set(it.id, el);
   }
   return el;
 }
 function place(it, i, s, layer, instant) {
-  const el = elFor(it), p = slotXY(i, s, Math.min(layer, 1));
+  const el = elFor(it), p = slotXY(i, s, Math.min(layer, 2));
   el.shelf = i; el.slot = s; el.layer = layer;
   if (G.sh[i].belt) {
     // en la cinta la posición la mueve el bucle de animación
@@ -570,7 +606,8 @@ function place(it, i, s, layer, instant) {
     if (!el.classList.contains('drag')) setXY(el, p.x, p.y, p.sc);
   }
   el.classList.toggle('back', layer === 1);
-  el.classList.toggle('deep', layer >= 2);
+  el.classList.toggle('back2', layer === 2);
+  el.classList.toggle('deep', layer >= 3);
   el.classList.toggle('locked', G.sh[i].k > G.m);
   if (instant) { el.offsetWidth; el.style.transition = ''; }
 }
@@ -611,16 +648,14 @@ function render(instant) {
   G.sh.forEach((x, i) => {
     x.f.forEach((it, s) => it && place(it, i, s, 0, instant));
     x.b.forEach((row, li) => row.forEach((it, s) => it && place(it, i, s, li + 1, instant)));
-    const ready = cnt(x.f) === 1 && x.b.length > 0 && x.k <= G.m;
-    (x.b[0] || []).forEach(it => it && elFor(it).classList.toggle('ready', ready));
     const d = G.shelfEls[i], chip = d.querySelector('.chip');
     if (!instant && x.belt) { /* la cinta se posiciona sola */ }
-    chip.hidden = x.b.length < 2; chip.textContent = '+' + (x.b.length - 1);
+    chip.hidden = true; // sin "+N": no se entendía y tapaba productos
     const sh = d.querySelector('.shutter');
     if (sh) {
       const left = x.k - G.m;
       if (left <= 0 && !sh.classList.contains('open')) { sh.classList.add('open'); sfx.open(); }
-      else if (left > 0) sh.querySelector('.tag').innerHTML = left === 1 ? 'FALTA<b>1</b>TRÍO' : `FALTAN<b>${left}</b>TRÍOS`;
+      else if (left > 0) sh.classList.remove('open'), sh.querySelector('.tag').innerHTML = left === 1 ? 'FALTA<b>1</b>VENTA' : `FALTAN<b>${left}</b>VENTAS`;
     }
   });
   hud();
@@ -632,6 +667,7 @@ function hud() {
   $('#hMovesBox').classList.toggle('low', left <= 3);
   $('#hScore').textContent = G.score;
   $('#hHints').textContent = G.hints;
+  $('#btnUndo').disabled = !G.hist.length || G.over;
   $('#btnHint').disabled = G.hints <= 0;
   const leftItems = G.sh.reduce((a, x) => a + cnt(x.f) + x.b.reduce((c, r) => c + cnt(r), 0), 0);
   $('#hBar').style.width = (100 * (1 - leftItems / G.total)) + '%';
@@ -659,6 +695,7 @@ let drag = null;
 function bxy(e) { const r = $('#board').getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
 $('#board').addEventListener('pointerdown', e => {
   if (!G || G.over || G.used >= G.L.moves) return;
+  if (e.button !== 0 || drag) return; // solo el botón principal; un segundo botón no arranca otro arrastre
   const p = bxy(e);
   const el = e.target.closest('.it');
   let it = null;
@@ -671,6 +708,9 @@ $('#board').addEventListener('pointerdown', e => {
       if (d < bd) { bd = d; best = o; } });
     if (best && !(G.sel && best.shelf !== G.sel.shelf && G.sh[best.shelf].f.includes(null))) it = best.it;
   }
+  if (!it && el && el.layer > 0) LOG('toque_atras', { i: el.shelf });
+  else if (!it && el && G.sh[el.shelf].k > G.m) LOG('toque_persiana', { i: el.shelf });
+  else if (!it && !G.sel) LOG('toque_vacio', { x: Math.round(p.x), y: Math.round(p.y), i: shelfAt(p.x, p.y) });
   drag = { it, x0: p.x, y0: p.y, moved: false, id: e.pointerId };
   $('#board').setPointerCapture(e.pointerId);
 });
@@ -679,7 +719,7 @@ $('#board').addEventListener('pointermove', e => {
   const p = bxy(e);
   if (!drag.moved && Math.hypot(p.x - drag.x0, p.y - drag.y0) < 7) return;
   const el = els.get(drag.it.id);
-  if (!drag.moved) { drag.moved = true; clearSel(); clearHint(); el.classList.add('drag'); sfx.pick(); }
+  if (!drag.moved) { drag.moved = true; clearSel(); clearHint(); el.classList.add('drag'); sfx.pick(); LOG('agarrar', { modo: 'arrastre', i: el.shelf, s: el.slot, tipo: drag.it.t }); }
   el.style.transform = `translate(${p.x - G.geo.vw / 2}px,${p.y - G.geo.ih * .75}px) scale(1.15)`;
   el.lx = p.x - G.geo.vw / 2; el.ly = p.y - G.geo.ih * .75;
   const t = shelfAt(p.x, p.y);
@@ -697,13 +737,14 @@ function endDrag(e) {
       const s = freeSlot(t, p.x);
       if (s >= 0) return doMove(el.shelf, el.slot, t, s);
     }
+    LOG('soltar_mal', { modo: 'arrastre', de: el.shelf, a: t, motivo: dropWhy(t, el.shelf) });
     render(); return;
   }
   // toque
   if (d.it && (!G.sel || G.sel.shelf === els.get(d.it.id).shelf)) {
     const el = els.get(d.it.id);
-    if (G.sel === el) { clearSel(); return; }
-    clearSel(); G.sel = el; el.classList.add('sel'); sfx.pick(); clearHint(); return;
+    if (G.sel === el) { clearSel(); LOG('soltar_mal', { modo: 'toque', de: el.shelf, a: el.shelf, motivo: 'mismo' }); return; }
+    clearSel(); G.sel = el; el.classList.add('sel'); sfx.pick(); clearHint(); LOG('agarrar', { modo: 'toque', i: el.shelf, s: el.slot, tipo: el.it.t }); return;
   }
   if (G.sel) {
     const t = shelfAt(p.x, p.y), el = G.sel;
@@ -711,12 +752,26 @@ function endDrag(e) {
       const s = freeSlot(t, p.x);
       if (s >= 0) { clearSel(); return doMove(el.shelf, el.slot, t, s); }
     }
+    LOG('soltar_mal', { modo: 'toque', de: el.shelf, a: t, motivo: dropWhy(t, el.shelf) });
     clearSel();
     if (d.it) { const o = els.get(d.it.id); G.sel = o; o.classList.add('sel'); sfx.pick(); }
   }
 }
 $('#board').addEventListener('pointerup', endDrag);
-$('#board').addEventListener('pointercancel', e => { if (drag) { drag.moved = false; drag = null; render(); } });
+// Si el arrastre se corta (clic derecho, menú contextual, cambio de ventana), el producto vuelve a su lugar.
+function cancelDrag() {
+  if (!drag) return;
+  const d = drag; drag = null;
+  G.shelfEls.forEach(s => s.classList.remove('target'));
+  if (d.moved && d.it) { const el = els.get(d.it.id); if (el) el.classList.remove('drag'); LOG('soltar_mal', { modo: 'arrastre', motivo: 'cortado' }); }
+  render();
+}
+$('#board').addEventListener('pointercancel', cancelDrag);
+$('#board').addEventListener('lostpointercapture', cancelDrag);
+$('#app').addEventListener('contextmenu', e => { e.preventDefault(); cancelDrag(); });
+addEventListener('blur', cancelDrag);
+const dropWhy = (t, from) => t < 0 ? 'fuera' : t === from ? 'mismo' : G.sh[t].k > G.m ? 'persiana' : G.lock.has(t) ? 'animando'
+  : (G.sh[t].belt && !cartVisible(t)) ? 'pliego_fuera' : 'lleno';
 function clearSel() { if (G && G.sel) { G.sel.classList.remove('sel'); G.sel = null; } }
 
 /* ---------- movidas y resolución ---------- */
@@ -727,6 +782,8 @@ const needsResolve = x => isTrio(x) || (cnt(x.f) === 0 && x.b.length > 0);
 function doMove(a, sa, b, sb) {
   clearHint();
   const g0 = G;
+  G.hist.push(snap());
+  LOG('mover', { a, sa, b, sb, tipo: G.sh[a].f[sa].t, estado: compact(), usados: G.used });
   const it = G.sh[a].f[sa]; G.sh[a].f[sa] = null; G.sh[b].f[sb] = it; G.used++;
   const mel = els.get(it.id); if (mel && mel.lx == null) { mel.lx = slotXY(a, sa, 0).x; mel.ly = slotXY(a, sa, 0).y; }
   render(); sfx.drop();
@@ -760,7 +817,7 @@ async function resolveShelf(i, g0) {
       if (G !== g0) return;
       burst(i);
       trio.forEach(it => { const el = els.get(it.id); el.classList.remove('match'); el.classList.add('pop'); });
-      G.score += 100; G.m++; x.f = [null, null, null];
+      LOG('trio', { i, tipo: trio[0].t }); G.score += 100; G.m++; x.f = [null, null, null];
       floatText(i, '+100');
       await wait(300);
       if (G !== g0) return;
@@ -769,7 +826,8 @@ async function resolveShelf(i, g0) {
       render();
       continue;
     }
-    if (n === 0 && x.b.length) { x.f = x.b.shift(); render(); await wait(300); continue; }
+    // pasa adelante y se puede agarrar enseguida (la animación sigue sola); solo se espera si forma una venta
+    if (n === 0 && x.b.length) { x.f = x.b.shift(); render(); if (isTrio(x)) await wait(300); continue; }
     break;
   }
 }
@@ -786,7 +844,7 @@ function unwrap(it) {
   const img = el.querySelector('img');
   el.classList.remove('wrapped');
   img.animate([{ transform: 'scaleX(1) rotate(0)' }, { transform: 'scaleX(0) rotate(-8deg)' }], { duration: 130, easing: 'ease-in' }).onfinish = () => {
-    img.src = 'sprites/' + it.t + '.webp'; img.alt = NAMES[it.t];
+    img.src = 'sprites/' + it.t + '.webp'; img.alt = NAMES[it.t]; el.dataset.t = it.t;
     img.animate([{ transform: 'scaleX(0) rotate(8deg)' }, { transform: 'scaleX(1.15)' }, { transform: 'scaleX(1)' }], { duration: 260, easing: 'ease-out' });
   };
   const r = el.getBoundingClientRect(), b = $('#board').getBoundingClientRect();
@@ -826,41 +884,117 @@ function checkEnd() {
   if (KE.stuck(s)) return lose('stuck');
 }
 function starsFor() {
+  // El mínimo (par) es el de una máquina que ve todo: una persona casi nunca lo iguala.
+  // 3 estrellas: usar hasta la mitad del margen; 2: hasta el 80 %; 1: el resto.
   const L = G.L, extra = L.moves - L.par;
-  if (G.used <= L.par) return 3;
-  if (G.used <= L.par + Math.ceil(extra / 2)) return 2;
+  if (G.used <= L.par + Math.floor(extra * .5)) return 3;
+  if (G.used <= L.par + Math.floor(extra * .8)) return 2;
   return 1;
+}
+// Tarjeta de fin: misma construcción al ganar y al perder.
+// Arriba los mismos contadores del juego (movimientos y puntos), al medio las estrellas, abajo los botones.
+function resultCard(title, movesLeft, score, extra, btns) {
+  return `<div class="sign"><h1>${title}</h1><div class="sub">Nivel ${G.n}</div></div><div class="body">
+    <div class="hud res" id="rRow" style="position:relative">
+      <div class="stat moves${movesLeft === 0 ? ' zero' : ''}" id="rMovesBox"><span class="k">Movimientos</span><span class="v" id="rMoves">${movesLeft}</span></div>
+      <div class="stat"><span class="k">Puntos</span><span class="v" id="rScore">${score}</span></div></div>
+    <div class="stars" id="rStars">${[1, 2, 3].map(() => STAR(false)).join('')}</div>
+    ${extra || ''}
+    <div class="btns">${btns}</div></div>`;
+}
+function bumpEl(el) { el.classList.remove('bump'); el.offsetWidth; el.classList.add('bump'); }
+function flyPlus(txt) {
+  const row = $('#rRow'); if (!row) return;
+  const a = $('#rMovesBox').getBoundingClientRect(), b = row.lastElementChild.getBoundingClientRect(), r = row.getBoundingClientRect();
+  const f = document.createElement('div'); f.className = 'float'; f.style.fontSize = '16px'; f.textContent = txt;
+  f.style.left = '0'; f.style.top = '0'; row.appendChild(f);
+  const x0 = a.left - r.left + a.width / 2, x1 = b.left - r.left + b.width / 2, y = a.top - r.top + a.height * .55;
+  f.animate([{ transform: `translate(${x0}px,${y}px) translate(-50%,-50%) scale(.7)`, opacity: 0 },
+             { transform: `translate(${x0}px,${y - 14}px) translate(-50%,-50%)`, opacity: 1, offset: .25 },
+             { transform: `translate(${x1}px,${y - 14}px) translate(-50%,-50%)`, opacity: 1, offset: .8 },
+             { transform: `translate(${x1}px,${y}px) translate(-50%,-50%) scale(.7)`, opacity: 0 }], { duration: 420, easing: 'ease-in-out' }).onfinish = () => f.remove();
 }
 async function win() {
   G.over = true; const g0 = G;
-  const left = G.L.moves - G.used, bonus = left * 20, stars = starsFor();
-  G.score += bonus; hud();
-  const prev = P.best[G.n];
-  if (!prev || prev.stars < stars || prev.score < G.score) P.best[G.n] = { stars: Math.max(stars, prev ? prev.stars : 0), score: Math.max(G.score, prev ? prev.score : 0) };
-  P.open = Math.max(P.open, Math.min(LEVELS.length, G.n + 1)); save();
+  const left = G.L.moves - G.used, stars = starsFor(), base = G.score;
+  G.score += left * 20; hud();
+  if (G.proc) PROC.done(true, stars);
+  else {
+    const prev = P.best[G.n];
+    if (!prev || prev.stars < stars || prev.score < G.score) P.best[G.n] = { stars: Math.max(stars, prev ? prev.stars : 0), score: Math.max(G.score, prev ? prev.score : 0) };
+    P.open = Math.max(P.open, Math.min(LEVELS.length, G.n + 1)); save();
+  }
   sfx.win();
   await wait(350);
   if (G !== g0) return;
-  const last = G.n === LEVELS.length;
-  modal(`<div class="sign"><h1>¡Góndola vacía!</h1><div class="sub">Nivel ${G.n}</div></div><div class="body">
-    <div class="stars">${[1, 2, 3].map(i => STAR(i <= stars).replace('<svg ', `<svg class="${i <= stars ? 'on' : ''}" style="animation-delay:${i * .15}s" `)).join('')}</div>
-    <div class="big">${G.score}</div>
-    <p>+${bonus} por ${left} movimientos sin usar</p>
-    ${stars < 3 ? `<p>Para 3 estrellas: ${G.L.par} movimientos o menos. Usaste ${G.used}.</p>` : ''}
-    <div class="btns"><button class="tag" data-a="retry">Reiniciar</button>${last ? '<button class="tag red" data-a="map">Niveles</button>' : '<button class="tag red" data-a="next">Siguiente nivel</button>'}</div></div>`);
+  LOG('gana', { usados: G.used, estrellas: stars, puntos: G.score });
+  const last = !G.proc && (G.n === LEVELS.length || (TEST && G.n >= TEST.to));
+  modal(resultCard('¡Góndola vacía!', left, base, G.proc ? PROC.breakNote() : '',
+    `<button class="tag" data-a="retry">Reiniciar</button>${last ? (TEST ? '<button class="tag red" data-a="fin">Terminar</button>' : '<button class="tag red" data-a="map">Niveles</button>') : '<button class="tag red" data-a="next">Siguiente nivel</button>'}`));
+  const card = $('#modal .card');
+  const alive = () => G === g0 && card.isConnected && !$('#modal').classList.contains('off');
+  await wait(550);
+  // cada movimiento que sobró pasa a los puntos (+20)
+  const step = Math.max(55, Math.min(140, 1400 / Math.max(1, left)));
+  for (let k = 1; k <= left; k++) {
+    if (!alive()) return;
+    $('#rMoves').textContent = left - k; $('#rScore').textContent = base + k * 20;
+    bumpEl($('#rMoves')); bumpEl($('#rScore')); flyPlus('+20'); sfx.tick(k);
+    await wait(step);
+  }
+  if (!alive()) return;
+  $('#rMovesBox').classList.add('zero');
+  await wait(250);
+  // después se llenan las estrellas ganadas
+  for (let i = 0; i < stars; i++) {
+    if (!alive()) return;
+    const old = $('#rStars').children[i];
+    old.outerHTML = STAR(true).replace('<svg ', '<svg class="on" ');
+    sfx.star(i); await wait(280);
+  }
 }
 function lose(why) {
+  LOG('pierde', { motivo: why, usados: G.used, quedan: compact().sh.reduce((a, x) => a + x.f.filter(Boolean).length + x.b.reduce((c, r) => c + r.filter(Boolean).length, 0), 0) });
   G.over = true; sfx.lose();
-  modal(`<div class="sign"><h1>${why === 'moves' ? 'Sin movimientos' : 'Sin lugar libre'}</h1><div class="sub">Nivel ${G.n}</div></div><div class="body">
-    <p>${why === 'moves' ? `Este nivel se puede resolver en ${G.L.par} movimientos.` : 'Ningún producto se puede mover. Dejá lugar libre en algún estante.'}</p>
-    <div class="btns"><button class="tag" data-a="map">Niveles</button><button class="tag red" data-a="retry">Reiniciar</button></div></div>`);
+  if (G.proc) PROC.done(false);
+  modal(resultCard(why === 'moves' ? 'Sin movimientos' : 'Sin lugar libre', G.L.moves - G.used, G.score,
+    why === 'moves' ? '' : '<p>Ningún producto se puede mover. Dejá lugar libre en algún estante.</p>',
+    (TEST ? '<button class="tag" data-a="saltar">Saltar</button>' : '<button class="tag" data-a="map">Niveles</button>') + '<button class="tag red" data-a="retry">Reiniciar</button>'));
+}
+function confirmRetry() {
+  modal(`<div class="sign"><h1>¿Reiniciar el nivel?</h1><div class="sub">Nivel ${G.n}</div></div><div class="body">
+    <div class="btns"><button class="tag" data-a="close">Cancelar</button><button class="tag red" data-a="retry">Reiniciar</button></div></div>`);
 }
 function modal(html) {
   const m = $('#modal'); m.innerHTML = `<div class="card" role="dialog" aria-modal="true">${html}</div>`; m.classList.remove('off');
   m.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
     const a = b.dataset.a; m.classList.add('off');
+    LOG('boton', { a });
+    if (a === 'close') return;
+    if (a === 'fin') return TEST && testEnd();
+    if (a === 'saltar') { LOG('saltar'); return G.n >= TEST.to ? testEnd() : startLevel(G.n + 1); }
+    if (G && G.proc) {
+      // en el modo procedural, el nivel actual siempre sale del modelo (puede tener más movimientos tras perder)
+      if (a === 'next') PROC.play(); else if (a === 'retry') (G.n === PROC.S.n ? PROC.play(true) : startLevel(G.n, true, G.L)); else PROC.map();
+      return;
+    }
     if (a === 'next') startLevel(G.n + 1); else if (a === 'retry') startLevel(G.n, true); else { buildMap(); show('#map'); }
   });
+}
+
+/* ---------- deshacer ---------- */
+const cloneIt = it => it ? { id: it.id, t: it.t, w: it.w } : null;
+function snap() {
+  return { sh: G.sh.map(x => ({ f: x.f.map(cloneIt), b: x.b.map(r => r.map(cloneIt)), k: x.k, belt: x.belt })), used: G.used, score: G.score, m: G.m };
+}
+function undo() {
+  if (!G || G.over || G.lock.size || !G.hist.length) return;
+  LOG('deshacer', { usados: G.used });
+  const s = G.hist.pop();
+  clearTimeout(G.endT); clearHint(); clearSel();
+  Object.assign(G, { sh: s.sh, used: s.used, score: s.score, m: s.m });
+  document.querySelectorAll('#board .it, #board .pt, #board .float').forEach(e => e.remove()); els.clear();
+  render(true); sfx.pick();
 }
 
 /* ---------- pista y tutorial ---------- */
@@ -907,6 +1041,7 @@ $('#btnHint').onclick = () => {
   $('#btnHint').disabled = true;
   setTimeout(() => {
     const mv = findHint();
+    LOG('pista', { mv });
     if (mv) { G.hints--; showMove(mv); hintTimer = setTimeout(clearHint, 6000); }
     else floatText(0, 'Sin salida: reiniciá');
     hud();
@@ -920,13 +1055,285 @@ function showTip() {
 }
 function hideTip() { if (tipEl) { tipEl.remove(); tipEl = null; } }
 
-$('#btnRetry').onclick = () => G && startLevel(G.n, true);
-$('#btnMap').onclick = () => { buildMap(); show('#map'); };
+$('#btnRetry').onclick = () => { LOG('reiniciar_toque'); if (!G) return; if (G.used && !G.over) confirmRetry(); else startLevel(G.n, true); };
+$('#btnUndo').onclick = undo;
+$('#btnMap').onclick = goMap;
 $('#btnSnd').onclick = () => { P.snd = !P.snd; save(); sndIcon(); };
 window.addEventListener('resize', () => { if (G && !$('#game').classList.contains('off')) { layout(); render(true); } });
 
+/* ---------- modo prueba: mouse, envío y pantallas ---------- */
+if (TEST) {
+  TEST.sid = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const flush = () => {
+    if (!LOGQ.length) return;
+    const batch = LOGQ.splice(0);
+    fetch('log?s=' + TEST.sid, { method: 'POST', body: JSON.stringify(batch), keepalive: true })
+      .then(r => { TEST.ok = r.ok; }).catch(() => { TEST.ok = false; });
+  };
+  TEST.flush = flush;
+  setInterval(flush, 2000);
+  addEventListener('pagehide', flush);
+  // qué hay debajo del mouse: estante.lugar:producto, ^ = parte de arriba (donde se ve lo de atrás)
+  const hoverCode = (cx, cy) => {
+    if (!$('#modal').classList.contains('off')) { const b = document.elementFromPoint(cx, cy); const btn = b && b.closest('button'); return 'modal' + (btn ? ':' + btn.textContent.trim() : ''); }
+    if (!G || $('#game').classList.contains('off')) return 'mapa';
+    const br = $('#board').getBoundingClientRect(), x = cx - br.left, y = cy - br.top;
+    if (x < 0 || y < 0 || x > br.width || y > br.height) { const b = document.elementFromPoint(cx, cy); const btn = b && b.closest('button,.stat'); return btn ? (btn.id || btn.textContent.trim().replace(/\s+/g, ' ')) : 'afuera'; }
+    if (!G.geo) return 'tablero';
+    const i = shelfAt(x, y); if (i < 0) return 'tablero';
+    const r = shelfRect(i), s = Math.floor((x - r.x - G.geo.pad) / G.geo.iw);
+    let c = 'e' + i;
+    if (s >= 0 && s < 3) { const it = G.sh[i].f[s]; c += '.' + s + ':' + (it ? (it.w ? '?' : it.t) : '_'); if (y < slotXY(i, s, 0).y + G.geo.ih * .15) c += '^'; }
+    return c;
+  };
+  let lastM = 0, lx = -9, ly = -9;
+  const appXY = e => { const r = $('#app').getBoundingClientRect(); return { x: Math.round(e.clientX - r.left), y: Math.round(e.clientY - r.top) }; };
+  document.addEventListener('pointermove', e => {
+    const now = performance.now(); if (now - lastM < 50 || Math.abs(e.clientX - lx) + Math.abs(e.clientY - ly) < 3) return;
+    lastM = now; lx = e.clientX; ly = e.clientY; LOG('m', Object.assign(appXY(e), { c: hoverCode(e.clientX, e.clientY) }));
+  }, true);
+  document.addEventListener('pointerdown', e => LOG('clic', Object.assign(appXY(e), { c: hoverCode(e.clientX, e.clientY) })), true);
+  const screenInfo = () => { const r = $('#app').getBoundingClientRect(); LOG('pantalla', { w: innerWidth, h: innerHeight, appW: Math.round(r.width), appH: Math.round(r.height) }); };
+  addEventListener('resize', screenInfo);
+  // botón Saltar en la barra de arriba
+  $('#btnSnd').insertAdjacentHTML('beforebegin', '<button class="tag" id="btnSkip" style="font-size:12px;min-height:44px;padding:0 8px">Saltar</button>');
+  $('#btnSkip').onclick = () => { if (!G) return; LOG('saltar_toque');
+    modal(`<div class="sign"><h1>¿Saltar el nivel?</h1><div class="sub">Nivel ${G.n}</div></div><div class="body">
+      <div class="btns"><button class="tag" data-a="close">Cancelar</button><button class="tag red" data-a="saltar">Saltar</button></div></div>`); };
+  P = { best: {}, open: 1, all: true, snd: P.snd };
+  screenInfo(); LOG('inicio', { desde: TEST.from, hasta: TEST.to, ua: navigator.userAgent });
+}
+function testEnd() {
+  LOG('fin'); TEST.flush();
+  modal(`<div class="sign"><h1>Prueba terminada</h1></div><div class="body">
+    <p>Gracias. El registro se guarda solo.</p>
+    <div class="btns"><button class="tag" id="dlLog">Descargar registro</button></div></div>`);
+  $('#dlLog').onclick = () => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([LOGALL.map(o => JSON.stringify(o)).join('\n')],{ type: 'application/json' }));
+    a.download = 'prueba-kiosco-' + TEST.sid + '.jsonl'; a.click();
+  };
+}
+
+/* ---------- modo procedural ----------
+   1) Tres niveles fijos de calibración, iguales para todos (los niveles 3, 6 y 10 de la lista).
+   2) Después, niveles generados según cómo jugaste: la meta es que las 3 estrellas estén a tu alcance.
+   Reglas éticas (GDD, sección 12): todo se mide y se guarda solo en este dispositivo; la dificultad no depende
+   de anuncios ni compras; nunca se cambia un nivel a mitad de partida; cada nivel generado tiene solución comprobada. */
+function procGen(KE, q) {
+  // q: {seed, cols, rows, types, layers, free, locks:[k], W, minRatio, pool:[tipos, los menos vistos primero]}
+  const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const shuffle = (a, r) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const triple = row => KE.cnt(row) === 3 && row[0] === row[1] && row[1] === row[2];
+  const S = q.cols * q.rows;
+  function build(r) {
+    const pool = shuffle(q.pool.slice(0, q.types).flatMap(t => [t, t, t]), r);
+    const frontN = Math.min(pool.length, 3 * S - q.free);
+    const sh = Array.from({ length: S }, () => ({ f: [null, null, null], b: [], k: 0 }));
+    let p = 0;
+    for (const sl of shuffle([...Array(3 * S).keys()], r).slice(0, frontN)) sh[Math.floor(sl / 3)].f[sl % 3] = pool[p++];
+    const rest = pool.slice(p);
+    let guard = 0;
+    while (rest.length && guard++ < 500) {
+      const cand = sh.filter(x => KE.cnt(x.f) > 0 && x.b.length < q.layers - 1);
+      if (!cand.length) return null;
+      const x = cand[Math.floor(r() * cand.length)], k = Math.min(rest.length, r() < .6 ? 3 : 2), row = [null, null, null];
+      shuffle([0, 1, 2], r).slice(0, k).forEach(i => { row[i] = rest.shift(); });
+      x.b.push(row);
+    }
+    if (rest.length || sh.some(x => triple(x.f) || x.b.some(triple))) return null;
+    const withStuff = shuffle(sh.map((x, i) => i).filter(i => KE.cnt(sh[i].f) > 0), r);
+    q.locks.forEach((k, j) => { sh[withStuff[j]].k = k; });
+    const s = { m: 0, sh };
+    return KE.stuck(s) ? null : s;
+  }
+  let fallback = null;
+  for (let at = 0; at < 40; at++) {
+    const s = build(rng(q.seed + at * 7919)); if (!s) continue;
+    const sol = KE.solveP(s, q.W); if (!sol) continue;
+    const lv = { sh: s.sh, par: sol.length };
+    if (sol.length >= q.types * q.minRatio) return lv; // descarto los que se resuelven solos
+    fallback = fallback || lv;
+  }
+  return fallback;
+}
+PROC = (() => {
+  const KEY = 'kiosco-proc', CAL = [3, 6, 10], AHEAD = 10;
+  const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+  const fresh = () => ({ n: 1, D: .45, effP: 1.25, done: {}, cal: [], recent: [], cur: null, fails: 0, seen: {}, lockSeen: false });
+  let S = fresh();
+  try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  const store = () => { if (TEST) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+  // Señales del dispositivo: se leen en el momento y no se guardan.
+  // Pantalla táctil chica: tope de 3x3 para que los productos no queden demasiado chicos para el dedo.
+  // Pocos núcleos: el generador busca la solución con menos esfuerzo.
+  const dev = () => ({ smallTouch: matchMedia('(pointer: coarse)').matches && Math.min(innerWidth, innerHeight) < 520, cores: navigator.hardwareConcurrency || 4 });
+
+  /* generador en segundo plano (Web Worker con el mismo motor); si el navegador no lo permite, corre acá */
+  let worker = null, wid = 0; const wq = new Map();
+  function gen(q) {
+    return new Promise(res => {
+      if (worker !== 'no') try {
+        if (!worker) {
+          const src = $('#engsrc').textContent + '\nconst procGen = ' + procGen.toString() + ';\nonmessage = e => postMessage({ id: e.data.id, r: procGen(KE, e.data.q) });';
+          worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+          worker.onmessage = e => { const w = wq.get(e.data.id); wq.delete(e.data.id); if (w) w.res(e.data.r); };
+          worker.onerror = () => { worker = 'no'; wq.forEach(w => w.res(procGen(KE, w.q))); wq.clear(); };
+        }
+        const id = ++wid; wq.set(id, { res, q }); worker.postMessage({ id, q }); return;
+      } catch (e) { worker = 'no'; }
+      setTimeout(() => res(procGen(KE, q)), 20);
+    });
+  }
+
+  /* métricas del nivel en curso */
+  let M = null;
+  const sessionT0 = Date.now(); let breakShown = false;
+  function trioVisible(s) {
+    for (let b = 0; b < s.sh.length; b++) {
+      if (s.sh[b].k > s.m || !s.sh[b].f.includes(null)) continue;
+      const c = {}; s.sh[b].f.forEach(t => t && (c[t] = (c[t] || 0) + 1));
+      for (const t in c) if (c[t] === 2) for (let a = 0; a < s.sh.length; a++) if (a !== b && s.sh[a].k <= s.m && s.sh[a].f.includes(t)) return true;
+    }
+    return false;
+  }
+  function begin() { M = { n: G.n, last: null, dur: 0, moves: 0, undo: 0, hint: 0, miss: 0, chances: 0, bad: 0 }; }
+  function ev(e, d) {
+    if (!M || M.n !== G.n) return;
+    const now = performance.now();
+    if (e === 'jugar') { M.last = now; return; }
+    if (!['agarrar', 'mover', 'soltar_mal', 'deshacer', 'pista', 'toque_atras', 'toque_vacio', 'toque_persiana'].includes(e)) return;
+    // tiempo activo: huecos entre acciones, con tope de 20 s (no cuenta si se fue a otra pestaña o dejó el juego)
+    if (M.last != null) M.dur += Math.min(20000, now - M.last);
+    M.last = now;
+    if (e === 'mover') {
+      M.moves++;
+      const s = d.estado, f = s.sh[d.b].f.slice(); f[d.sb] = d.tipo;
+      const makes = cnt(f) === 3 && f.every(x => x === d.tipo);
+      if (makes || trioVisible(s)) { M.chances++; if (!makes) M.miss++; }
+    }
+    if (e === 'soltar_mal') M.bad++;
+    if (e === 'deshacer') M.undo++;
+    if (e === 'pista') M.hint++;
+  }
+  // Habilidad de 0 a 1 en el nivel que terminó
+  function skillOf(won, stars) {
+    if (!won || !M) return 0;
+    // eficiencia comparada con la que se esperaba de este jugador (S.effP): con 3 estrellas y lo esperado, 0,6
+    const eff = G.used / G.L.par;
+    const sEff = stars === 3 ? clamp(.6 + (S.effP - eff) / .25) : stars === 2 ? .35 : .15;
+    const sMiss = M.chances ? 1 - clamp(M.miss / M.chances / .5) : .7;
+    const sHelp = 1 - clamp((M.undo + M.hint) / 4);
+    const sPace = clamp((8 - (M.moves ? M.dur / 1000 / M.moves : 8)) / 6);
+    return .5 * sEff + .2 * sMiss + .15 * sHelp + .15 * sPace;
+  }
+
+  /* niveles */
+  function calLevel(n) {
+    const src = LEVELS[CAL[n - 1] - 1];
+    return { n, cols: src.cols, rows: src.rows, par: src.par, moves: src.moves, shelves: src.shelves, wrap: src.wrap,
+      title: TITLES[CAL[n - 1]][0], volanta: NEW[n] || '', tip: TIPS[n] || null, cal: true };
+  }
+  function params(n) {
+    let d = S.D;
+    if (n % 5 === 0) d -= .15;                                   // nivel de respiro cada 5
+    const r = S.recent.slice(-3);
+    if (r.length === 3 && r.reduce((a, x) => a + x, 0) / 3 > 150) d -= .1; // los últimos 3 tardaron más de 2,5 min
+    d = clamp(d);
+    const bands = [[2, 2, 0, .15], [2, 3, .15, .35], [3, 3, .35, .65], [3, 4, .65, 1.001]];
+    const dv = dev();
+    let gi = bands.findIndex(x => d < x[3]); if (dv.smallTouch) gi = Math.min(gi, 2);
+    const [cols, rows, lo, hi] = bands[gi], f = clamp((d - lo) / (hi - lo)), Sx = cols * rows;
+    const names = Object.keys(NAMES).sort((a, b) => (S.seen[a] || 0) - (S.seen[b] || 0) || Math.random() - .5);
+    return { d, seed: (Math.random() * 1e9) | 0, cols, rows, types: Math.min(21, Math.round(Sx * (1 + .25 * f))), layers: d > .35 ? 3 : 2,
+      free: clamp(Math.round(Sx * (.75 - .4 * f)), 3, 7), locks: d > .55 && Math.random() < .5 ? [d > .8 ? 3 : 2] : [],
+      W: Sx <= 6 ? 120 : dv.cores <= 2 ? 50 : 80, minRatio: d < .1 ? 0 : 1.6, pool: names };
+  }
+  // Movimientos: los justos para que, jugando como venís jugando, entren las 3 estrellas.
+  // 3 estrellas = usar hasta par + mitad del margen  →  margen ≥ 2 · par · (eficiencia − 1)
+  const marginFor = par => clamp(Math.ceil(2 * par * (S.effP + .05 - 1)) + 2, 3, par);
+  async function make(n) {
+    if (n <= CAL.length) return calLevel(n);
+    let q = params(n), g = await gen(q);
+    if (!g) { q = params(n); q.locks = []; q.minRatio = 0; g = await gen(q); }
+    q.pool.slice(0, q.types).forEach(t => S.seen[t] = (S.seen[t] || 0) + 1);
+    const front = [...new Set(g.sh.flatMap(x => x.f).filter(Boolean))];
+    const t = front[(Math.random() * front.length) | 0];
+    const L = { n, cols: q.cols, rows: q.rows, par: g.par, moves: g.par + marginFor(g.par), shelves: g.sh, D: +q.d.toFixed(2),
+      title: HEADS[t][(Math.random() * 2) | 0], volanta: '', tip: null };
+    if (q.locks.length && !S.lockSeen) { S.lockSeen = true; L.volanta = NEW[16]; L.tip = TIPS[16]; }
+    return L;
+  }
+  let pending = null;
+  function prepare() { if (S.cur || pending) return pending; const n = S.n; pending = make(n).then(L => { if (S.n === n) { S.cur = L; store(); } pending = null; return L; }); return pending; }
+  async function play(quiet) {
+    if (!S.cur) {
+      modal(`<div class="sign"><h1>Nivel ${S.n}</h1></div><div class="body"><div class="stars"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
+      await prepare();
+    }
+    startLevel(S.n, quiet, S.cur);
+  }
+  // fin de un nivel: actualiza el modelo y deja armado el siguiente
+  function done(won, stars) {
+    if (G.n !== S.n) return;                                       // repetición de un nivel viejo: no cuenta
+    const skill = skillOf(won, stars), cal = !!G.L.cal;
+    if (won) {
+      S.effP = S.effP * .65 + (G.used / G.L.par) * .35;
+      S.recent = S.recent.concat(Math.round((M ? M.dur : 0) / 1000)).slice(-5);
+      S.done[S.n] = stars;
+      if (cal) S.cal.push(skill);
+      else S.D = clamp(S.D + clamp(.12 * (skill - .55), -.15, .15));
+      S.n++; S.cur = null; S.fails = 0;
+      if (S.n === CAL.length + 1) S.D = clamp(.2 + .5 * S.cal.reduce((a, x) => a + x, 0) / Math.max(1, S.cal.length));
+    } else {
+      S.fails++;
+      // perder con todos los movimientos usados = necesitaba más que los que tenía
+      S.effP = Math.min(2, S.effP * .65 + (G.L.moves / G.L.par + .15) * .35);
+      if (!cal) {
+        S.D = clamp(S.D + .12 * (0 - .55) - .08 - (S.fails >= 2 ? .12 : 0));
+        if (S.fails >= 2) S.cur = null;                            // dos derrotas seguidas: otro nivel, más fácil
+        else S.cur = Object.assign({}, S.cur, { moves: S.cur.moves + 2 }); // primera derrota: 2 movimientos más
+      }
+    }
+    store(); prepare();
+  }
+  function breakNote() {
+    if (breakShown || Date.now() - sessionT0 < 25 * 60000) return '';
+    breakShown = true; return '<p>Llevás 25 minutos jugando. Tu progreso queda guardado.</p>';
+  }
+  function map() {
+    const box = $('#mapScroll'), tile = (n, cls, inner, dis) => `<button class="tag lvl${cls}" data-n="${n}" ${dis ? 'disabled aria-disabled="true"' : ''} aria-label="Nivel ${n}">${inner}</button>`;
+    const lockIco = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true" style="position:absolute;top:3px;right:3px;width:12px;height:12px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+    const stars = k => `<span class="st">${[1, 2, 3].map(i => STAR(k >= i)).join('').replace(/<svg /g, '<svg width="13" height="13" ')}</span>`;
+    let h = `<button class="tag procbtn" id="btnClassic">Niveles 1 a ${LEVELS.length}</button>
+      <div class="tag intro">Cada nivel se arma según cómo jugaste los anteriores.</div><div class="sect">Modo procedural</div><div class="row">`;
+    const last = S.n + AHEAD;
+    for (let n = 1; n <= last; n++) {
+      if (n > 1 && (n - 1) % 5 === 0) h += '</div><div class="row">';
+      if (n < S.n) h += tile(n, ' done', `<b>${String(n).padStart(2, '0')}</b>${stars(S.done[n] || 0)}`, true);
+      else if (n === S.n) h += tile(n, ' cur', `<b>${String(n).padStart(2, '0')}</b>${stars(0)}`, false);
+      else h += tile(n, ' lock', `${lockIco}<b>${String(n).padStart(2, '0')}</b>${stars(0)}`, true);
+    }
+    h += `</div><div class="mapfoot"><button class="tag" id="btnProcReset">Borrar progreso</button></div>`;
+    box.innerHTML = h;
+    box.querySelector('.lvl.cur').onclick = () => play();
+    $('#btnClassic').onclick = () => { buildMap(); show('#map'); };
+    $('#btnProcReset').onclick = () => { S = fresh(); pending = null; store(); map(); };
+    show('#map'); box.querySelector('.lvl.cur').scrollIntoView({ block: 'center' });
+    prepare();
+  }
+  return { ev, begin, done, play, map, breakNote, get S() { return S; } };
+})();
+
 buildMap(); sndIcon();
-window.__kiosco = { get G() { return G; }, doMove, startLevel, compact, shelfAt, isOpen, freeSlot, shelfRect };
+if (TEST) {
+  modal(`<div class="sign"><h1>Prueba de dificultad</h1><div class="sub">Niveles ${TEST.from} a ${TEST.to}</div></div><div class="body">
+    <p>Jugá los niveles en orden, como jugarías siempre.</p>
+    <p>Se registra el mouse y cada jugada para ver dónde se complica.</p>
+    <p>Si un nivel te cansa, tocá Saltar.</p>
+    <div class="btns"><button class="tag red" id="btnStart">Empezar</button></div></div>`);
+  $('#btnStart').onclick = () => { LOG('empezar'); startLevel(TEST.from); };
+}
+window.__kiosco = { get G() { return G; }, get proc() { return PROC.S; }, doMove, undo, startLevel, compact, shelfAt, isOpen, freeSlot, shelfRect };
 })();
 </script>
 </body>
