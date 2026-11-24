@@ -174,6 +174,7 @@ button.tag:disabled{opacity:.5}
 .lvl{position:relative;z-index:1;flex-direction:column;gap:2px;padding:6px 0 5px;min-height:64px;cursor:pointer;font-size:10px}
 .lvl b{font-family:var(--slab);font-weight:400;font-size:22px;line-height:1}
 .lvl .st{display:flex;gap:1px}
+.lvl b.n3{font-size:17px}
 .lvl.lock{filter:grayscale(.6) brightness(.8);cursor:default}
 .lvl.cur{background:linear-gradient(#d63c41,var(--red));color:var(--cream);border-color:var(--red-d);animation:beat 1.6s infinite}
 .lvl.cur .st svg path{stroke:var(--cream)}
@@ -928,7 +929,7 @@ async function win() {
   await wait(350);
   if (G !== g0) return;
   LOG('gana', { usados: G.used, estrellas: stars, puntos: G.score });
-  const last = !G.proc && (G.n === LEVELS.length || (TEST && G.n >= TEST.to));
+  const last = G.proc ? G.n >= PROC.MAX : (G.n === LEVELS.length || (TEST && G.n >= TEST.to));
   modal(resultCard('¡Góndola vacía!', left, base, G.proc ? PROC.breakNote() : '',
     `<button class="tag" data-a="retry">Reiniciar</button>${last ? (TEST ? '<button class="tag red" data-a="fin">Terminar</button>' : '<button class="tag red" data-a="map">Niveles</button>') : '<button class="tag red" data-a="next">Siguiente nivel</button>'}`));
   const card = $('#modal .card');
@@ -1157,7 +1158,7 @@ function procGen(KE, q) {
   return fallback;
 }
 PROC = (() => {
-  const KEY = 'kiosco-proc', CAL = [3, 6, 10], AHEAD = 10;
+  const KEY = 'kiosco-proc', CAL = [3, 6, 10], AHEAD = 10, MAX = 300; // se ven 10 niveles cerrados más adelante, hasta el 300
   const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
   const fresh = () => ({ n: 1, D: .45, effP: 1.25, done: {}, cal: [], recent: [], cur: null, fails: 0, seen: {}, lockSeen: false });
   let S = fresh();
@@ -1264,7 +1265,7 @@ PROC = (() => {
     return L;
   }
   let pending = null;
-  function prepare() { if (S.cur || pending) return pending; const n = S.n; pending = make(n).then(L => { if (S.n === n) { S.cur = L; store(); } pending = null; return L; }); return pending; }
+  function prepare() { if (S.cur || pending || S.n > MAX) return pending; const n = S.n; pending = make(n).then(L => { if (S.n === n) { S.cur = L; store(); } pending = null; return L; }); return pending; }
   async function play(quiet) {
     if (!S.cur) {
       modal(`<div class="sign"><h1>Nivel ${S.n}</h1></div><div class="body"><div class="stars"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
@@ -1304,24 +1305,25 @@ PROC = (() => {
     const box = $('#mapScroll'), tile = (n, cls, inner, dis) => `<button class="tag lvl${cls}" data-n="${n}" ${dis ? 'disabled aria-disabled="true"' : ''} aria-label="Nivel ${n}">${inner}</button>`;
     const lockIco = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true" style="position:absolute;top:3px;right:3px;width:12px;height:12px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
     const stars = k => `<span class="st">${[1, 2, 3].map(i => STAR(k >= i)).join('').replace(/<svg /g, '<svg width="13" height="13" ')}</span>`;
-    let h = `<button class="tag procbtn" id="btnClassic">Niveles 1 a ${LEVELS.length}</button>
-      <div class="tag intro">Cada nivel se arma según cómo jugaste los anteriores.</div><div class="sect">Modo procedural</div><div class="row">`;
-    const last = S.n + AHEAD;
+    let h = `<div class="sect" style="display:flex;align-items:center;gap:8px"><button class="tag iconbtn" id="btnClassic" aria-label="Volver">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>Modo procedural</div><div class="row">`;
+    const last = Math.min(MAX, S.n + AHEAD);
     for (let n = 1; n <= last; n++) {
       if (n > 1 && (n - 1) % 5 === 0) h += '</div><div class="row">';
-      if (n < S.n) h += tile(n, ' done', `<b>${String(n).padStart(2, '0')}</b>${stars(S.done[n] || 0)}`, true);
-      else if (n === S.n) h += tile(n, ' cur', `<b>${String(n).padStart(2, '0')}</b>${stars(0)}`, false);
-      else h += tile(n, ' lock', `${lockIco}<b>${String(n).padStart(2, '0')}</b>${stars(0)}`, true);
+      if (n < S.n) h += tile(n, ' done', `<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(S.done[n] || 0)}`, true);
+      else if (n === S.n) h += tile(n, ' cur', `<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(0)}`, false);
+      else h += tile(n, ' lock', `${lockIco}<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(0)}`, true);
     }
     h += `</div><div class="mapfoot"><button class="tag" id="btnProcReset">Borrar progreso</button></div>`;
     box.innerHTML = h;
-    box.querySelector('.lvl.cur').onclick = () => play();
+    const cur = box.querySelector('.lvl.cur');
+    if (cur) cur.onclick = () => play();
     $('#btnClassic').onclick = () => { buildMap(); show('#map'); };
     $('#btnProcReset').onclick = () => { S = fresh(); pending = null; store(); map(); };
-    show('#map'); box.querySelector('.lvl.cur').scrollIntoView({ block: 'center' });
+    show('#map'); (cur || box.querySelector('.lvl:last-of-type')).scrollIntoView({ block: 'center' });
     prepare();
   }
-  return { ev, begin, done, play, map, breakNote, get S() { return S; } };
+  return { ev, begin, done, play, map, breakNote, MAX, get S() { return S; } };
 })();
 
 buildMap(); sndIcon();
