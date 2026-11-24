@@ -136,7 +136,11 @@ button.tag:disabled{opacity:.5}
 .it.sel{z-index:10}
 .it.sel .bob{animation:selb .5s ease-in-out infinite alternate}
 .it.drag{z-index:50;transition:none}
-.it.drag img{filter:drop-shadow(0 10px 8px rgba(0,0,0,.45))}
+/* producto seleccionado o arrastrado: borde blanco (4 sombras sin desenfoque) */
+.it.sel img,.it.drag img{filter:drop-shadow(2.5px 0 0 #fff) drop-shadow(-2.5px 0 0 #fff) drop-shadow(0 2.5px 0 #fff) drop-shadow(0 -2.5px 0 #fff) drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+.it.drag img{filter:drop-shadow(2.5px 0 0 #fff) drop-shadow(-2.5px 0 0 #fff) drop-shadow(0 2.5px 0 #fff) drop-shadow(0 -2.5px 0 #fff) drop-shadow(0 10px 8px rgba(0,0,0,.45))}
+.it[data-t="bandoneon"]:not(.back):not(.back2).sel img{filter:brightness(1.55) saturate(1.1) drop-shadow(2.5px 0 0 #fff) drop-shadow(-2.5px 0 0 #fff) drop-shadow(0 2.5px 0 #fff) drop-shadow(0 -2.5px 0 #fff) drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+.it[data-t="bandoneon"]:not(.back):not(.back2).drag img{filter:brightness(1.55) saturate(1.1) drop-shadow(2.5px 0 0 #fff) drop-shadow(-2.5px 0 0 #fff) drop-shadow(0 2.5px 0 #fff) drop-shadow(0 -2.5px 0 #fff) drop-shadow(0 10px 8px rgba(0,0,0,.45))}
 .it.match .bob{animation:matchb .2s ease-out forwards}
 .it.pop{transition:none;animation:pop .32s ease-in forwards}
 .it.hint .bob{animation:hintb .6s ease-in-out infinite alternate}
@@ -532,7 +536,8 @@ function showTapa() {
   m.querySelector('[data-t="map"]').onclick = () => { m.classList.add('off'); goMap(); };
 }
 // vuelve al mapa del modo que se está jugando
-function goMap() { if (G && G.proc) PROC.map(); else { buildMap(); show('#map'); } }
+// el mapa normal es el de niveles generados; la lista fija de 40 queda solo para el modo prueba (?prueba)
+function goMap() { if (TEST && !(G && G.proc)) { buildMap(); show('#map'); } else PROC.map(); }
 
 function layout() {
   const board = $('#board'), W = board.clientWidth, H = board.clientHeight;
@@ -888,6 +893,8 @@ function starsFor() {
   // El mínimo (par) es el de una máquina que ve todo: una persona casi nunca lo iguala.
   // 3 estrellas: usar hasta la mitad del margen; 2: hasta el 80 %; 1: el resto.
   const L = G.L, extra = L.moves - L.par;
+  // niveles generados: umbrales fijos que dependen solo del mínimo, no de los movimientos que se dieron
+  if (L.s3) return G.used <= L.s3 ? 3 : G.used <= L.s2 ? 2 : 1;
   if (G.used <= L.par + Math.floor(extra * .5)) return 3;
   if (G.used <= L.par + Math.floor(extra * .8)) return 2;
   return 1;
@@ -1160,9 +1167,10 @@ function procGen(KE, q) {
 PROC = (() => {
   const KEY = 'kiosco-proc', CAL = [3, 6, 10], AHEAD = 10, MAX = 300; // se ven 10 niveles cerrados más adelante, hasta el 300
   const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
-  const fresh = () => ({ n: 1, D: .45, effP: 1.25, done: {}, cal: [], recent: [], cur: null, fails: 0, seen: {}, lockSeen: false });
+  const fresh = () => ({ n: 1, D: .45, effP: 1.25, done: {}, cal: [], recent: [], cur: null, fails: 0, seen: {}, lockSeen: false, lv: {} });
   let S = fresh();
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  S.lv = S.lv || {}; // niveles ya ganados: quedan fijos en su número para rejugarlos
   const store = () => { if (TEST) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
   // Señales del dispositivo: se leen en el momento y no se guardan.
   // Pantalla táctil chica: tope de 3x3 para que los productos no queden demasiado chicos para el dedo.
@@ -1219,9 +1227,9 @@ PROC = (() => {
   // Habilidad de 0 a 1 en el nivel que terminó
   function skillOf(won, stars) {
     if (!won || !M) return 0;
-    // eficiencia comparada con la que se esperaba de este jugador (S.effP): con 3 estrellas y lo esperado, 0,6
-    const eff = G.used / G.L.par;
-    const sEff = stars === 3 ? clamp(.6 + (S.effP - eff) / .25) : stars === 2 ? .35 : .15;
+    // 3 estrellas justas = 0,6; cuanto más abajo del límite de 3 estrellas, más cerca de 1. 2 estrellas = 0,3; 1 = 0,1
+    const L = G.L, s3 = L.s3 || (L.par + Math.floor((L.moves - L.par) * .5));
+    const sEff = stars === 3 ? .6 + .4 * clamp((s3 - G.used) / Math.max(1, s3 - L.par)) : stars === 2 ? .3 : .1;
     const sMiss = M.chances ? 1 - clamp(M.miss / M.chances / .5) : .7;
     const sHelp = 1 - clamp((M.undo + M.hint) / 4);
     const sPace = clamp((8 - (M.moves ? M.dur / 1000 / M.moves : 8)) / 6);
@@ -1249,9 +1257,11 @@ PROC = (() => {
       free: clamp(Math.round(Sx * (.75 - .4 * f)), 3, 7), locks: d > .55 && Math.random() < .5 ? [d > .8 ? 3 : 2] : [],
       W: Sx <= 6 ? 120 : dv.cores <= 2 ? 50 : 80, minRatio: d < .1 ? 0 : 1.6, pool: names };
   }
-  // Movimientos: los justos para que, jugando como venís jugando, entren las 3 estrellas.
-  // 3 estrellas = usar hasta par + mitad del margen  →  margen ≥ 2 · par · (eficiencia − 1)
-  const marginFor = par => clamp(Math.ceil(2 * par * (S.effP + .05 - 1)) + 2, 3, par);
+  // Estrellas: límites fijos según el mínimo (par). No se aflojan según cómo juega la persona:
+  // las 3 estrellas se facilitan con niveles más fáciles (D), no regalando movimientos.
+  const s3For = par => par + Math.max(2, Math.round(par * .25)), s2For = par => par + Math.max(4, Math.round(par * .5));
+  // Movimientos: los suficientes para no perder jugando como venís jugando, y siempre algunos más que el límite de 2 estrellas.
+  const movesFor = par => Math.min(par * 2, Math.max(s2For(par) + 2, Math.ceil(par * (S.effP + .15)) + 2));
   async function make(n) {
     if (n <= CAL.length) return calLevel(n);
     let q = params(n), g = await gen(q);
@@ -1259,7 +1269,7 @@ PROC = (() => {
     q.pool.slice(0, q.types).forEach(t => S.seen[t] = (S.seen[t] || 0) + 1);
     const front = [...new Set(g.sh.flatMap(x => x.f).filter(Boolean))];
     const t = front[(Math.random() * front.length) | 0];
-    const L = { n, cols: q.cols, rows: q.rows, par: g.par, moves: g.par + marginFor(g.par), shelves: g.sh, D: +q.d.toFixed(2),
+    const L = { n, cols: q.cols, rows: q.rows, par: g.par, s3: s3For(g.par), s2: s2For(g.par), moves: movesFor(g.par), shelves: g.sh, D: +q.d.toFixed(2),
       title: HEADS[t][(Math.random() * 2) | 0], volanta: '', tip: null };
     if (q.locks.length && !S.lockSeen) { S.lockSeen = true; L.volanta = NEW[16]; L.tip = TIPS[16]; }
     return L;
@@ -1275,14 +1285,18 @@ PROC = (() => {
   }
   // fin de un nivel: actualiza el modelo y deja armado el siguiente
   function done(won, stars) {
-    if (G.n !== S.n) return;                                       // repetición de un nivel viejo: no cuenta
+    if (G.n !== S.n) {                                              // repetición de un nivel ganado: solo guarda el récord de estrellas
+      if (won && stars > (S.done[G.n] || 0)) { S.done[G.n] = stars; store(); }
+      return;
+    }
     const skill = skillOf(won, stars), cal = !!G.L.cal;
     if (won) {
       S.effP = S.effP * .65 + (G.used / G.L.par) * .35;
       S.recent = S.recent.concat(Math.round((M ? M.dur : 0) / 1000)).slice(-5);
-      S.done[S.n] = stars;
+      S.done[S.n] = stars; S.lv[S.n] = G.L;
       if (cal) S.cal.push(skill);
-      else S.D = clamp(S.D + clamp(.12 * (skill - .55), -.15, .15));
+      // sin 3 estrellas, el próximo nivel baja más (2 estrellas: −0,05 extra; 1 estrella: −0,08)
+      else S.D = clamp(S.D + clamp(.12 * (skill - .55), -.15, .15) - (stars === 2 ? .05 : stars === 1 ? .08 : 0));
       S.n++; S.cur = null; S.fails = 0;
       if (S.n === CAL.length + 1) S.D = clamp(.2 + .5 * S.cal.reduce((a, x) => a + x, 0) / Math.max(1, S.cal.length));
     } else {
@@ -1305,12 +1319,11 @@ PROC = (() => {
     const box = $('#mapScroll'), tile = (n, cls, inner, dis) => `<button class="tag lvl${cls}" data-n="${n}" ${dis ? 'disabled aria-disabled="true"' : ''} aria-label="Nivel ${n}">${inner}</button>`;
     const lockIco = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true" style="position:absolute;top:3px;right:3px;width:12px;height:12px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
     const stars = k => `<span class="st">${[1, 2, 3].map(i => STAR(k >= i)).join('').replace(/<svg /g, '<svg width="13" height="13" ')}</span>`;
-    let h = `<div class="sect" style="display:flex;align-items:center;gap:8px"><button class="tag iconbtn" id="btnClassic" aria-label="Volver">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>Modo procedural</div><div class="row">`;
+    let h = '<div class="row">';
     const last = Math.min(MAX, S.n + AHEAD);
     for (let n = 1; n <= last; n++) {
       if (n > 1 && (n - 1) % 5 === 0) h += '</div><div class="row">';
-      if (n < S.n) h += tile(n, ' done', `<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(S.done[n] || 0)}`, true);
+      if (n < S.n) h += tile(n, ' done', `<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(S.done[n] || 0)}`, !S.lv[n]);
       else if (n === S.n) h += tile(n, ' cur', `<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(0)}`, false);
       else h += tile(n, ' lock', `${lockIco}<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(0)}`, true);
     }
@@ -1318,7 +1331,7 @@ PROC = (() => {
     box.innerHTML = h;
     const cur = box.querySelector('.lvl.cur');
     if (cur) cur.onclick = () => play();
-    $('#btnClassic').onclick = () => { buildMap(); show('#map'); };
+    box.querySelectorAll('.lvl.done').forEach(b => b.onclick = () => { const L = S.lv[+b.dataset.n]; if (L) startLevel(+b.dataset.n, false, L); });
     $('#btnProcReset').onclick = () => { S = fresh(); pending = null; store(); map(); };
     show('#map'); (cur || box.querySelector('.lvl:last-of-type')).scrollIntoView({ block: 'center' });
     prepare();
@@ -1326,7 +1339,8 @@ PROC = (() => {
   return { ev, begin, done, play, map, breakNote, MAX, get S() { return S; } };
 })();
 
-buildMap(); sndIcon();
+if (TEST) buildMap(); else PROC.map();
+sndIcon();
 if (TEST) {
   modal(`<div class="sign"><h1>Prueba de dificultad</h1><div class="sub">Niveles ${TEST.from} a ${TEST.to}</div></div><div class="body">
     <p>Jugá los niveles en orden, como jugarías siempre.</p>
