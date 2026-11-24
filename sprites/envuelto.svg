@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 110" width="110" height="110">
+  <defs>
+    <linearGradient id="p" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f1ecdd"/><stop offset=".55" stop-color="#ddd5bf"/><stop offset="1" stop-color="#b9b09a"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="55" cy="106" rx="44" ry="3.5" fill="#000" opacity=".25"/>
+  <path d="M12 52 C10 30 30 20 55 22 C82 20 100 32 98 54 C100 80 90 104 55 104 C22 104 10 82 12 52 Z" fill="url(#p)" stroke="#3e3426" stroke-width="2.6"/>
+  <path d="M22 40 C35 34 48 44 60 36 C72 30 84 38 92 42" fill="none" stroke="#8b826d" stroke-width="1.6"/>
+  <path d="M18 74 C34 70 46 80 62 72 C76 66 86 74 94 72" fill="none" stroke="#8b826d" stroke-width="1.6"/>
+  <g fill="#857c69" opacity=".85">
+    <rect x="22" y="48" width="22" height="2.2" rx="1"/><rect x="22" y="53" width="18" height="2.2" rx="1"/><rect x="22" y="58" width="22" height="2.2" rx="1"/>
+    <rect x="68" y="80" width="22" height="2.2" rx="1"/><rect x="68" y="85" width="18" height="2.2" rx="1"/><rect x="26" y="84" width="24" height="2.2" rx="1"/>
+  </g>
+  <text x="70" y="56" font-family="Georgia, serif" font-weight="700" font-size="9" fill="#222" text-anchor="middle" transform="rotate(-8 70 56)">Página/12</text>
+  <path d="M55 22 C53 50 57 80 55 104 M12 60 C40 56 70 64 98 58" stroke="#8a5a2b" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+  <path d="M49 18 C40 6 54 4 55 22 C56 4 70 6 61 18" fill="none" stroke="#8a5a2b" stroke-width="3.4" stroke-linecap="round"/>
+  <circle cx="55" cy="62" r="15" fill="#c2272d" stroke="#7d1519" stroke-width="2.4"/>
+  <text x="55" y="70.5" font-family="Georgia, serif" font-weight="700" font-size="23" fill="#f4e8c8" text-anchor="middle">?</text>
+</svg>
