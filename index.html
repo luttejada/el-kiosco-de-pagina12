@@ -1278,6 +1278,15 @@ PROC = (() => {
   }
   let pending = null;
   function prepare() { if (S.cur || pending || S.n > MAX) return pending; const n = S.n; pending = make(n).then(L => { if (S.n === n) { S.cur = L; store(); } pending = null; return L; }); return pending; }
+  // Rejugar un nivel ganado. Si se ganó antes de que se guardaran los niveles (antes del 24/11/2026),
+  // se arma uno nuevo para ese número la primera vez y queda fijo desde entonces.
+  async function replay(n) {
+    if (!S.lv[n]) {
+      modal(`<div class="sign"><h1>Nivel ${n}</h1></div><div class="body"><div class="stars"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
+      const L = await make(n); L.n = n; S.lv[n] = L; store();
+    }
+    startLevel(n, false, S.lv[n]);
+  }
   async function play(quiet) {
     if (!S.cur) {
       modal(`<div class="sign"><h1>Nivel ${S.n}</h1></div><div class="body"><div class="stars"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
@@ -1327,7 +1336,7 @@ PROC = (() => {
     for (let n = 1; n <= last + (last < MAX ? 5 + (5 - last % 5) % 5 : 0); n++) {
       if (n > last) { if ((n - 1) % 5 === 0) h += '</div><div class="row">'; h += `<button class="tag lvl lock q" disabled aria-label="Nivel cerrado"><b>?</b>${stars(0)}</button>`; continue; }
       if (n > 1 && (n - 1) % 5 === 0) h += '</div><div class="row">';
-      if (n < S.n) h += tile(n, ' done', `<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(S.done[n] || 0)}`, !S.lv[n]);
+      if (n < S.n) h += tile(n, ' done', `<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(S.done[n] || 0)}`, false);
       else if (n === S.n) h += tile(n, ' cur', `<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(0)}`, false);
       else h += tile(n, ' lock', `${lockIco}<b${n > 99 ? ' class="n3"' : ''}>${String(n).padStart(2, '0')}</b>${stars(0)}`, true);
     }
@@ -1335,7 +1344,7 @@ PROC = (() => {
     box.innerHTML = h;
     const cur = box.querySelector('.lvl.cur');
     if (cur) cur.onclick = () => play();
-    box.querySelectorAll('.lvl.done').forEach(b => b.onclick = () => { const L = S.lv[+b.dataset.n]; if (L) startLevel(+b.dataset.n, false, L); });
+    box.querySelectorAll('.lvl.done').forEach(b => b.onclick = () => replay(+b.dataset.n));
     $('#btnProcReset').onclick = () => { S = fresh(); pending = null; store(); map(); };
     show('#map'); (cur || box.querySelector('.lvl:last-of-type')).scrollIntoView({ block: 'center' });
     prepare();
