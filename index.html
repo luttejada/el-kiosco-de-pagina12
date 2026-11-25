@@ -630,7 +630,13 @@ const save = () => { if (TEST) return; try { localStorage.setItem('kiosco-p12', 
    Si la persona es asociada sale de una sola señal. En la prueba: ?asociado=1 en el link, o window.KIOSCO_ASOCIADO = true
    antes de cargar el juego. Todo lo que se manda a la plataforma pasa por P12.enviar (postMessage a la página que contiene el juego). */
 const P12 = {
-  asociado: /[?&]asociado=(1|si|true)/.test(location.search) || window.KIOSCO_ASOCIADO === true,
+  // botón de prueba en Configuración: solo aparece si el juego NO está metido dentro de otra página (en P12 no se ve)
+  prueba: window.self === window.top,
+  get asociado() {
+    let forzado = false;
+    try { forzado = this.prueba && localStorage.getItem('kiosco-asociado-prueba') === '1'; } catch (e) {}
+    return forzado || /[?&]asociado=(1|si|true)/.test(location.search) || window.KIOSCO_ASOCIADO === true;
+  },
   partidasDia() { return this.asociado ? 3 : 1; },
   enviar(ev, datos) {
     const msg = { fuente: 'kiosco-p12', ev, datos };
@@ -1692,6 +1698,7 @@ const CFG = (() => {
       <label class="cfgrow"><span>Volumen</span><input type="range" min="0" max="100" step="5" id="cfgVol" value="${P.vol}" aria-label="Volumen"></label>
       ${midDia ? '' : '<button class="tag cfgbtn" id="cfgTut">Cómo jugar</button>'}
       <button class="tag cfgbtn" id="cfgReset">Borrar progreso</button>
+      ${P12.prueba ? `<button class="tag cfgbtn" id="cfgAso">Prueba: asociado ${P12.asociado ? 'SÍ' : 'NO'}</button>` : ''}
       <div class="btns"><button class="tag red" data-a="close">Cerrar</button></div></div>`);
     const vol = $('#cfgVol');
     vol.oninput = () => { P.vol = +vol.value; save(); };
@@ -1699,6 +1706,11 @@ const CFG = (() => {
     if ($('#cfgTut')) $('#cfgTut').onclick = () => {
       const back = !$('#home').classList.contains('off') ? HOME.show : (G && G.mode === 'test') ? () => { buildMap(); show('#map'); } : P12.asociado ? PROC.map : HOME.show;
       TUT.run(back, true);
+    };
+    if ($('#cfgAso')) $('#cfgAso').onclick = () => {
+      try { localStorage.setItem('kiosco-asociado-prueba', P12.asociado ? '0' : '1'); } catch (e) {}
+      if (!$('#home').classList.contains('off')) HOME.show();
+      open();
     };
     $('#cfgReset').onclick = () => {
       modal(`<div class="sign"><h1>¿Borrar progreso?</h1></div><div class="body">
