@@ -224,7 +224,8 @@ button.tag:disabled{opacity:.5}
 .order b{font-family:var(--slab);font-weight:400;font-size:20px;color:var(--ink);letter-spacing:0}
 .order.done{background:#cfe3b5}
 /* Inicio */
-#home .menu{flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:10px 22px 30px}
+#home .menu{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:10px 22px 24px}
+#home .vitrina{flex:1;min-height:0}
 .modebtn{display:flex;flex-direction:column;width:100%;min-height:84px;font-size:24px;font-family:var(--slab);font-weight:400;text-transform:none;letter-spacing:0;gap:2px}
 .modebtn .icon{width:22px;height:22px}
 #home .note{margin:2px 0 16px;font-size:14px}
@@ -257,6 +258,50 @@ button.tag:disabled{opacity:.5}
 .cfgbtn{display:flex;width:100%;margin:8px 0}
 .rec{font-weight:700;color:var(--red,#c0262d);text-transform:uppercase;letter-spacing:.8px}
 .cfgsec{margin:18px 0 4px;padding-top:10px;border-top:1px dashed currentColor;font-weight:600;text-transform:uppercase;letter-spacing:.8px;opacity:.7}
+/* Inicio: vidriera del kiosco con productos que se mueven (decoración; tocar uno lo hace saltar) */
+.vitrina{display:flex;flex-direction:column;justify-content:center;gap:22px;padding:14px 18px 4px}
+.vrow{position:relative;display:flex;justify-content:space-around;align-items:flex-end;height:clamp(70px,13vh,120px);padding:0 6px 13px}
+.vrow::after{content:"";position:absolute;left:0;right:0;bottom:0;height:13px;border-radius:3px;
+  background:linear-gradient(#d99a5b,var(--wood) 45%,var(--wood-d));border-bottom:3px solid var(--wood-dd);box-shadow:0 4px 5px rgba(0,0,0,.35)}
+.vi{position:relative;z-index:1;height:100%;aspect-ratio:2/3;transform-origin:50% 100%;cursor:pointer}
+.vi .bob{width:100%;height:100%;transform-origin:50% 100%;animation:var(--a) var(--d) ease-in-out var(--l) infinite}
+.vi img{width:100%;height:100%;object-fit:contain;object-position:50% 100%;display:block;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+.vi.hop{animation:hop .5s cubic-bezier(.3,1.4,.5,1)}
+@keyframes hop{40%{transform:translateY(-28%) scale(1.08,.94)}}
+.modebtn small{font-family:var(--cond);font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:.85}
+
+/* Pantalla horizontal: los controles van en una columna a la izquierda y la góndola ocupa el resto */
+@media (orientation: landscape) and (min-width: 600px) {
+  #app{max-width:1200px}
+  #game{display:grid;grid-template-columns:minmax(210px,27%) 1fr;grid-template-rows:auto auto auto auto 1fr;column-gap:6px}
+  #game>.top{grid-column:1;grid-row:1}
+  #game>.hud{grid-column:1;grid-row:2;grid-template-columns:1fr 1fr}
+  #game>.hud .moves{grid-column:1/-1;order:-1}
+  #game>.bar{grid-column:1;grid-row:3}
+  #game>.order{grid-column:1;grid-row:4;flex-wrap:wrap}
+  #game>.bottom{grid-column:1;grid-row:5;flex-direction:column;justify-content:flex-end}
+  #game>.bottom .tag{max-width:none;flex:none}
+  #game>#board{grid-column:2;grid-row:1/-1;margin:6px 6px 6px 0}
+  #home{display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:auto 1fr}
+  #home>.top{grid-column:1/-1}
+  #home .vitrina{padding:10px 10px 20px 24px}
+  #home .vrow{height:clamp(64px,22vh,130px)}
+  #home .menu{padding:10px 28px 20px}
+  #mapScroll{display:grid;grid-template-columns:1fr 1fr;column-gap:18px;align-content:start}
+  #mapScroll>.sect,#mapScroll>.note,#mapScroll>p{grid-column:1/-1}
+  #modal{padding:10px}
+  .card,.tapa{max-height:100%;overflow-y:auto}
+}
+@media (orientation: landscape) and (max-height: 480px) {
+  .stat{min-height:44px}
+  .stat .v{font-size:18px}
+  .stat.moves .v{font-size:24px}
+  .stars svg{width:42px;height:42px}
+  .card .body{padding:10px 14px 12px}
+  .tapa h2{font-size:24px}
+  #home .vitrina{gap:14px}
+  .modebtn{min-height:64px;font-size:20px}
+}
 </style>
 </head>
 <body>
@@ -266,6 +311,7 @@ button.tag:disabled{opacity:.5}
     <section id="home" class="screen">
       <div class="top"><div class="sign"><h1>El kiosco de Página/12</h1></div>
         <button class="tag iconbtn cfg" aria-label="Configuración"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+      <div class="vitrina" id="vitrina" aria-hidden="true"></div>
       <div class="menu">
         <button class="tag red modebtn" id="btnDia">Partida del día</button>
         <p class="note" id="diaNote"></p>
@@ -770,8 +816,8 @@ function goMap() {
 
 function layout() {
   const board = $('#board'), W = board.clientWidth, H = board.clientHeight;
-  const { cols } = G.L, rows = G.L.rows + (G.nb ? 1 : 0), gx = 6, plank = 13, ratio = 1.5, over = 0.96, peek = .34;
-  let gy = 10;
+  const { cols } = G.L, rows = G.L.rows + (G.nb ? 1 : 0), plank = 13, ratio = 1.5, over = 0.96, peek = .34;
+  let gy = 10, gx = 6;
   const tipH = G.tipH || 0, HH = H - tipH;
   let iw = Math.min((W - (cols - 1) * gx) / cols * .985 / 3, 84);
   // alto del estante: el frente más un escalón por cada capa de atrás visible (hasta 2)
@@ -779,6 +825,8 @@ function layout() {
   const sh = iw => iw * ratio * (1 + peek * depth) + plank + 4;
   while (rows * sh(iw) + (rows - 1) * gy > HH - 6 && iw > 18) iw -= .5;
   const ih = iw * ratio, shelfW = iw * 3 / .985, shelfH = sh(iw), vw = iw * over;
+  // pantalla ancha (horizontal): el ancho que sobra separa un poco los estantes
+  gx = Math.max(gx, Math.min(36, (W - cols * shelfW) / (cols + 1)));
   // reparto el alto que sobra entre las filas para que la góndola llene la pantalla
   gy = Math.max(gy, Math.min(44, (HH - rows * shelfH) / (rows + 1)));
   const ox = (W - (cols * shelfW + (cols - 1) * gx)) / 2, oy = Math.max(4, (HH - (rows * shelfH + (rows - 1) * gy)) / 2);
@@ -1764,13 +1812,26 @@ const HOME = (() => {
   $('#btnDia').onclick = () => enter(() => DIA.play());
   $('#btnAv').onclick = () => { if (P12.asociado) enter(() => PROC.map()); };
   $('#btnHome').onclick = () => show_();
+  // vidriera: 2 estantes con 4 productos al azar cada uno; cambian cada vez que se vuelve al inicio
+  function vitrina() {
+    const ts = Object.keys(NAMES).sort(() => Math.random() - .5).slice(0, 8);
+    const it = t => `<div class="vi" data-t="${t}" style="--a:${ANIM[t] || 'bob'};--d:${(2.2 + Math.random() * 1.6).toFixed(2)}s;--l:${(-Math.random() * 3).toFixed(2)}s"><div class="bob"><img src="${SPR(t)}" alt=""></div></div>`;
+    $('#vitrina').innerHTML = [ts.slice(0, 4), ts.slice(4)].map(r => `<div class="vrow">${r.map(it).join('')}</div>`).join('');
+  }
+  $('#vitrina').addEventListener('pointerdown', e => {
+    const v = e.target.closest('.vi'); if (!v) return;
+    v.classList.remove('hop'); v.offsetWidth; v.classList.add('hop'); sfx.pick();
+  });
   function show_() {
-    const n = DIA.left();
+    vitrina();
+    const n = DIA.left(), best = DIA.records().siempre.puntos;
     $('#btnDia').disabled = !n;
-    $('#diaNote').textContent = n === Infinity ? '' : n > 1 ? `Te quedan ${n} partidas hoy.` : n === 1 ? 'Te queda 1 partida hoy.' : 'Volvé mañana para jugar otra partida.';
+    const quedan = n === Infinity ? '' : n > 1 ? `Te quedan ${n} partidas hoy.` : n === 1 ? 'Te queda 1 partida hoy.' : 'Volvé mañana para jugar otra partida.';
+    $('#diaNote').textContent = [quedan, best ? `Tu mejor puntaje: ${best}` : ''].filter(Boolean).join(' · ');
     $('#btnAv').disabled = !P12.asociado;
     $('#btnAv').innerHTML = P12.asociado ? 'Aventura' : lockIco + 'Aventura';
-    $('#avNote').textContent = P12.asociado ? '' : 'Aventura es solo para asociados de Página/12.';
+    const S = PROC.S;
+    $('#avNote').textContent = !P12.asociado ? 'Aventura es solo para asociados de Página/12.' : S.n > 1 ? `Nivel ${Math.min(S.n, PROC.MAX)} · ${PROC.barrioOf(Math.min(S.n, PROC.MAX)).name}` : '';
     $('#modal').classList.add('off');
     show('#home');
   }
