@@ -637,7 +637,7 @@ const P12 = {
     try { forzado = this.prueba && localStorage.getItem('kiosco-asociado-prueba') === '1'; } catch (e) {}
     return forzado || /[?&]asociado=(1|si|true)/.test(location.search) || window.KIOSCO_ASOCIADO === true;
   },
-  partidasDia() { return this.asociado ? 3 : 1; },
+  partidasDia() { return this.asociado ? Infinity : 1; },   // asociados: sin límite
   enviar(ev, datos) {
     const msg = { fuente: 'kiosco-p12', ev, datos };
     try { if (window.parent !== window) window.parent.postMessage(msg, '*'); } catch (e) {}
@@ -748,7 +748,7 @@ function showTapa() {
   const tipTapa = G.tip && !juego;   // en los modos de juego la explicación ya estuvo en la tarjeta; queda abajo de la góndola
   const [h] = lv ? [G.L.title || ''] : (TITLES[G.n] || ['']);
   const vol = lv ? (G.L.volanta || '') : (NEW[G.n] || '');
-  const label = G.mode === 'dia' ? `Partida ${G.n} de ${P12.partidasDia()}` : G.mode === 'av' ? `Nivel ${G.n} · ${PROC.barrioOf(G.n).name}` : `Nivel ${G.n} de ${LEVELS.length}`;
+  const label = G.mode === 'dia' ? (P12.asociado ? `Partida ${G.n}` : `Partida ${G.n} de ${P12.partidasDia()}`) : G.mode === 'av' ? `Nivel ${G.n} · ${PROC.barrioOf(G.n).name}` : `Nivel ${G.n} de ${LEVELS.length}`;
   const m = $('#modal');
   m.innerHTML = `<div class="tapa" role="dialog" aria-modal="true" aria-label="${label}">
     <div class="mast"><b>Página/12</b><span>${label}</span></div><div class="redline"></div>
@@ -1057,9 +1057,10 @@ async function resolveShelf(i, g0) {
       burst(i);
       const sold = KE.sale(trio.map(it => it.t));
       trio.forEach(it => { const el = els.get(it.id); el.classList.remove('match'); el.classList.add('pop'); });
-      LOG('trio', { i, tipo: sold }); G.score += 100; G.m++; x.f = [null, null, null];
+      const pts = G.L.pts || 100;   // en la Partida del día vale más si el nivel tiene mecánicas
+      LOG('trio', { i, tipo: sold }); G.score += pts; G.m++; x.f = [null, null, null];
       if (G.goal && sold === G.goal.t) G.g++;
-      floatText(i, '+100');
+      floatText(i, '+' + pts);
       await wait(300);
       if (G !== g0) return;
       trio.forEach(it => { const el = els.get(it.id); if (el) el.remove(); els.delete(it.id); });
@@ -1181,6 +1182,11 @@ function flyPlus(txt) {
 }
 async function win() {
   G.over = true; const g0 = G;
+  // Partida del día con pedido: lo que quedó en la góndola se cobra como vendido, para que un pedido no dé menos puntos que vaciar la góndola
+  if (G.mode === 'dia' && G.goal) {
+    const rest = G.sh.reduce((a, x) => a + cnt(x.f) + x.b.reduce((c, r) => c + cnt(r), 0), 0);
+    G.score += Math.floor(rest / 3) * (G.L.pts || 100);
+  }
   const left = G.L.moves - G.used, stars = starsFor(), base = G.score;
   G.score += left * 20; hud();
   if (G.proc) PROC.done(true, stars);
@@ -1563,21 +1569,30 @@ PROC = (() => {
   }
   // Partida del día: mismo modelo del jugador (D, effP, productos vistos) y 1 o 2 mecánicas cualquiera.
   // Si una mecánica nunca se vio, la tarjeta de showTapa la explica antes de jugar.
+  // La primera Partida del día de una persona es entre fácil y media (góndola de 3x3 con 2 capas y 1 mecánica),
+  // sin importar el modelo: para muchos es la única partida del día y tiene que salir bien.
   async function makeDia(k) {
-    const r = Math.random, mechs = ORDER.slice().sort(() => r() - .5).slice(0, r() < .5 ? 1 : 2);
-    let q = params(1, mechs), g = await gen(q);
+    const r = Math.random, first = !S.diaN, mechs = ORDER.slice().sort(() => r() - .5).slice(0, first || r() < .5 ? 1 : 2);
+    const keep = S.D; if (first) S.D = .41;
+    let q = params(1, mechs); S.D = keep;
+    let g = await gen(q);
     if (!g) { q = params(1, mechs); q.seed++; q.minRatio = 0; g = await gen(q); }
     if (!g) { q = params(1, []); q.minRatio = 0; g = await gen(q); }
     q.pool.slice(0, q.types).forEach(t => S.seen[t] = (S.seen[t] || 0) + 1); store();
     const front = [...new Set(g.sh.flatMap(x => x.f).filter(t => t && HEADS[t]))], t = front[(r() * front.length) | 0] || 'diario';
     const extra = Math.ceil((q.wraps || 0) / 2) + (q.belt ? 1 : 0), used = g.sh.length > q.cols * q.rows || q.locks.length || q.wraps || q.boxes || q.wild || q.goal ? mechs : [];
-    return { n: k, cols: q.cols, rows: q.rows, par: g.par, s3: s3For(g.par) + extra, s2: s2For(g.par) + extra, moves: movesFor(g.par) + extra,
+    // Puntos para el ranking: cada venta vale 100 y +30 por cada mecánica del nivel (las mecánicas achican la góndola,
+    // así que sin esto un nivel con mecánicas daría menos puntos aunque cueste más).
+    // Movimientos: fijos según el mínimo, iguales para todos (no dependen de cómo jugás), así los que sobran valen lo mismo para todos.
+    return { n: k, cols: q.cols, rows: q.rows, par: g.par, s3: s3For(g.par) + extra, s2: s2For(g.par) + extra, moves: s2For(g.par) + 3 + extra,
+      pts: 100 + 30 * used.length,
       shelves: g.sh, wrap: g.wrap, belt: g.belt, goal: g.goal, D: +q.d.toFixed(2), mechs: used, title: HEADS[t][(r() * 2) | 0], volanta: 'Partida del día',
       tip: used.filter(m => !P.vistas[m]).map(m => MECH[m].tip).join(' ') || null };   // abajo de la góndola, solo la primera vez
   }
   // fin de una Partida del día: el modelo aprende igual que en Aventura, sin mover el número de nivel.
   // Si la persona salió a la mitad no se aprende nada: no dice cómo juega.
   function learnDia(won, stars, quit) {
+    S.diaN = (S.diaN || 0) + 1; store();
     if (quit) return;
     const skill = skillOf(won, stars);
     if (won) {
@@ -1674,7 +1689,7 @@ PROC = (() => {
 /* ---------- Partida del día ----------
    Desde el 25/11/2026 cada partida se arma con el algoritmo de Aventura (PROC.makeDia), según cómo jugás, con 1 o 2 mecánicas
    cualquiera; y lo que jugás acá también le enseña al algoritmo (PROC.learnDia). Los niveles fijos de gen-dia.js ya no se usan.
-   Las personas asociadas tienen más partidas (P12.partidasDia).
+   Sin asociación: 1 partida por día. Asociados: sin límite (P12.partidasDia).
    Una partida empieza al tocar Jugar en la tapa y cuenta aunque se salga a la mitad: no se puede volver a empezar. */
 const DIA = (() => {
   const KEY = 'kiosco-dia';
@@ -1730,7 +1745,7 @@ const HOME = (() => {
   function show_() {
     const n = DIA.left();
     $('#btnDia').disabled = !n;
-    $('#diaNote').textContent = n > 1 ? `Te quedan ${n} partidas hoy.` : n === 1 ? 'Te queda 1 partida hoy.' : 'Volvé mañana para jugar otra partida.';
+    $('#diaNote').textContent = n === Infinity ? '' : n > 1 ? `Te quedan ${n} partidas hoy.` : n === 1 ? 'Te queda 1 partida hoy.' : 'Volvé mañana para jugar otra partida.';
     $('#btnAv').disabled = !P12.asociado;
     $('#btnAv').innerHTML = P12.asociado ? 'Aventura' : lockIco + 'Aventura';
     $('#avNote').textContent = P12.asociado ? '' : 'Aventura es solo para asociados de Página/12.';
