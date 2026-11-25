@@ -255,6 +255,7 @@ button.tag:disabled{opacity:.5}
 .cfgrow{display:flex;align-items:center;gap:10px;margin:6px 0 14px;font-weight:600;text-transform:uppercase;letter-spacing:.8px}
 .cfgrow input[type=range]{flex:1;accent-color:var(--red);height:32px}
 .cfgbtn{display:flex;width:100%;margin:8px 0}
+.cfgsec{margin:18px 0 4px;padding-top:10px;border-top:1px dashed currentColor;font-weight:600;text-transform:uppercase;letter-spacing:.8px;opacity:.7}
 </style>
 </head>
 <body>
@@ -621,7 +622,7 @@ const STAR = on => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8
 
 /* ---------- progreso ---------- */
 // vol: volumen de 0 a 100; tut: ya vio Cómo jugar
-let P = { best: {}, open: 1, all: false, vol: 70, tut: false };
+let P = { best: {}, open: 1, all: false, vol: 70, tut: false, vistas: {} };
 try { const o = JSON.parse(localStorage.getItem('kiosco-p12') || '{}'); if (o.snd === false && o.vol == null) o.vol = 0; Object.assign(P, o); } catch (e) {}
 delete P.snd; // versión anterior: sonido prendido o apagado
 const save = () => { if (TEST) return; try { localStorage.setItem('kiosco-p12', JSON.stringify(P)); } catch (e) {} };
@@ -1547,7 +1548,7 @@ PROC = (() => {
     const L = { n, cols: q.cols, rows: q.rows, par: g.par, s3: s3For(g.par) + extra, s2: s2For(g.par) + extra,
       moves: (intro ? g.par * 2 + 2 : movesFor(g.par)) + extra, shelves: g.sh, wrap: g.wrap, belt: g.belt, goal: g.goal, D: +q.d.toFixed(2), mechs,
       title: HEADS[t][(Math.random() * 2) | 0], volanta: '', tip: null };
-    if (intro) Object.assign(L, { title: MECH[b.nuevo].title, volanta: MECH[b.nuevo].vol, tip: MECH[b.nuevo].tip });
+    if (intro) { Object.assign(L, { title: MECH[b.nuevo].title, volanta: MECH[b.nuevo].vol, tip: MECH[b.nuevo].tip }); P.vistas[b.nuevo] = true; save(); }
     else if (n === b.from) L.volanta = 'Barrio nuevo: ' + b.name;
     return L;
   }
@@ -1649,10 +1650,13 @@ const DIA = (() => {
   function levelFor(k) {
     const i = hash(S.fecha + ':' + k) % DIA_LEVELS.length, L = DIA_LEVELS[i];
     const ts = [...new Set(L.shelves.flatMap(x => x.f).filter(t => t && HEADS[t]))], t = ts[hash(S.fecha + 't' + k) % ts.length] || 'diario';
-    return Object.assign({}, L, { n: k + 1, title: HEADS[t][hash(S.fecha) % 2], volanta: 'Partida del día', tip: null, idx: i });
+    // la primera vez que aparece una mecánica, su explicación va en la tapa y abajo de la góndola
+    const nuevas = (L.mech || []).filter(m => MECH[m] && !(P.vistas || {})[m]);
+    return Object.assign({}, L, { n: k + 1, title: HEADS[t][hash(S.fecha) % 2], volanta: 'Partida del día',
+      tip: nuevas.length ? nuevas.map(m => MECH[m].tip).join(' ') : null, nuevas, idx: i });
   }
   function play() { if (!left()) return HOME.show(); const k = S.jugadas.length; cur = { k, started: false }; startLevel(k + 1, false, levelFor(k), 'dia'); }
-  function begin() { if (!cur || cur.started) return; cur.started = true; S.jugadas.push({ nivel: G.L.idx + 1, estado: 'jugando' }); store(); }
+  function begin() { if (!cur || cur.started) return; cur.started = true; (G.L.nuevas || []).forEach(m => P.vistas[m] = true); save(); S.jugadas.push({ nivel: G.L.idx + 1, estado: 'jugando' }); store(); }
   const started = () => !!(cur && cur.started);
   function done(won, stars) {
     if (!started()) return;
@@ -1698,7 +1702,9 @@ const CFG = (() => {
       <label class="cfgrow"><span>Volumen</span><input type="range" min="0" max="100" step="5" id="cfgVol" value="${P.vol}" aria-label="Volumen"></label>
       ${midDia ? '' : '<button class="tag cfgbtn" id="cfgTut">Cómo jugar</button>'}
       <button class="tag cfgbtn" id="cfgReset">Borrar progreso</button>
-      ${P12.prueba ? `<button class="tag cfgbtn" id="cfgAso">Prueba: asociado ${P12.asociado ? 'SÍ' : 'NO'}</button>` : ''}
+      ${P12.prueba ? `<div class="cfgsec">Debug</div>
+      <button class="tag cfgbtn" id="cfgAso">Asociado: ${P12.asociado ? 'SÍ' : 'NO'}</button>
+      <button class="tag cfgbtn" id="cfgTutLen">Cómo jugar: ${TUT.largo() ? 'largo' : 'corto'}</button>` : ''}
       <div class="btns"><button class="tag red" data-a="close">Cerrar</button></div></div>`);
     const vol = $('#cfgVol');
     vol.oninput = () => { P.vol = +vol.value; save(); };
@@ -1710,6 +1716,10 @@ const CFG = (() => {
     if ($('#cfgAso')) $('#cfgAso').onclick = () => {
       try { localStorage.setItem('kiosco-asociado-prueba', P12.asociado ? '0' : '1'); } catch (e) {}
       if (!$('#home').classList.contains('off')) HOME.show();
+      open();
+    };
+    if ($('#cfgTutLen')) $('#cfgTutLen').onclick = () => {
+      try { localStorage.setItem('kiosco-tut-largo', TUT.largo() ? '0' : '1'); } catch (e) {}
       open();
     };
     $('#cfgReset').onclick = () => {
@@ -1762,6 +1772,12 @@ const TUT = (() => {
     ['Caramelo', img('mate') + img('mate') + img('caramelo'), 'El caramelo completa cualquier venta: juntalo con 2 productos iguales.'],
     ['Pedido', `<div class="order"><span>Pedido</span>${img('mate')}<b>0/3</b></div>`, 'Si el nivel tiene pedido, ganás cuando hacés las ventas del pedido.']
   ];
+  // Versión corta (la de siempre): solo lo que no se aprende jugando. Deshacer y Pista se entienden con su botón;
+  // cada mecánica se explica la primera vez que aparece (tapa del nivel y texto abajo de la góndola).
+  // La versión larga (las 11 tarjetas) queda para comparar desde la sección Debug de Configuración.
+  const SHORT = ['Ganar', 'Movimientos', 'Estrellas'];
+  const largo = () => { try { return P12.prueba && localStorage.getItem('kiosco-tut-largo') === '1'; } catch (e) { return false; } };
+  const deck = () => largo() ? CARDS : CARDS.filter(c => SHORT.includes(c[0]));
   let i = 0, onDone = null, fromCfg = false, box = null, skip = null;
   function run(done, cfg) {
     onDone = done; fromCfg = cfg; i = 0;
@@ -1789,9 +1805,9 @@ const TUT = (() => {
   function after() { i++; if (i < STEPS.length) step(); else if (box) box.textContent = ''; }
   function cards(k = 0) {
     if (box) { box.remove(); box = null; }
-    const [title, pic, txt] = CARDS[k], lastOne = k === CARDS.length - 1;
+    const D = deck(), [title, pic, txt] = D[k], lastOne = k === D.length - 1;
     modal(`<div class="sign"><h1>${title}</h1></div><div class="body">
-      <div class="tutpic">${pic}</div><p>${txt}</p><div class="tutstep">${k + 1} / ${CARDS.length}</div>
+      <div class="tutpic">${pic}</div><p>${txt}</p><div class="tutstep">${k + 1} / ${D.length}</div>
       <div class="btns">${lastOne ? '' : `<button class="tag" id="tutSkip">${fromCfg ? 'Cerrar' : 'Saltar'}</button>`}<button class="tag red" id="tutNext">${lastOne ? 'Listo' : 'Siguiente'}</button></div></div>`);
     $('#tutNext').onclick = () => lastOne ? finish() : cards(k + 1);
     if ($('#tutSkip')) $('#tutSkip').onclick = finish;
@@ -1805,7 +1821,7 @@ const TUT = (() => {
     const fn = onDone; onDone = null; G.over = true;
     if (fn) fn(); else HOME.show();
   }
-  return { run, start, allow, after, cards, close: finish };
+  return { run, start, allow, after, cards, close: finish, largo };
 })();
 
 if (TEST) { buildMap(); show('#map'); } else HOME.show();
