@@ -576,12 +576,12 @@ const TIPS = {
 const NEW = {1:'Para arrancar', 2:'Nuevo: productos de atrás', 3:'Estrellas', 16:'Nuevo: persiana', 31:'Nuevo: rotativa', 35:'Nuevo: envueltos'};
 // Mecánicas de Aventura: cartel de la tapa del nivel que la presenta (volanta, titular y una línea de ayuda)
 const MECH = {
-  persiana: { vol: 'Nuevo: persiana', title: 'Bajó la persiana', tip: TIPS[16] },
-  envuelto: { vol: 'Nuevo: envueltos', title: 'Llegó envuelto en diario', tip: TIPS[35] },
-  rotativa: { vol: 'Nuevo: rotativa', title: 'Arrancó la rotativa', tip: TIPS[31] },
-  caja: { vol: 'Nuevo: caja', title: 'Llegó el reparto', tip: 'La caja no se mueve. Se abre con una venta en su estante o en un estante pegado.' },
-  caramelo: { vol: 'Nuevo: caramelo', title: 'Vuelto en caramelos', tip: 'El caramelo completa cualquier venta: juntalo con 2 productos iguales.' },
-  pedido: { vol: 'Nuevo: pedido', title: 'Llegó un pedido', tip: 'Hacé las ventas del pedido para ganar. No hace falta vaciar la góndola.' }
+  persiana: { name: 'Persiana', vol: 'Nuevo: persiana', title: 'Bajó la persiana', tip: TIPS[16] },
+  envuelto: { name: 'Envuelto', vol: 'Nuevo: envueltos', title: 'Llegó envuelto en diario', tip: TIPS[35] },
+  rotativa: { name: 'Rotativa', vol: 'Nuevo: rotativa', title: 'Arrancó la rotativa', tip: TIPS[31] },
+  caja: { name: 'Caja', vol: 'Nuevo: caja', title: 'Llegó el reparto', tip: 'La caja no se mueve. Se abre con una venta en su estante o en un estante pegado.' },
+  caramelo: { name: 'Caramelo', vol: 'Nuevo: caramelo', title: 'Vuelto en caramelos', tip: 'El caramelo completa cualquier venta: juntalo con 2 productos iguales.' },
+  pedido: { name: 'Pedido', vol: 'Nuevo: pedido', title: 'Llegó un pedido', tip: 'Hacé las ventas del pedido para ganar. No hace falta vaciar la góndola.' }
 };
 const HEADS = {
   diario:['Página/12 se agotó en todos los kioscos','Edición especial: los canillitas no dan abasto'],
@@ -742,7 +742,14 @@ function startLevel(n, quiet, Lobj, mode) {
   if (!quiet) showTapa();
 }
 function showTapa() {
-  const lv = G.mode !== 'test';
+  const lv = G.mode !== 'test', juego = G.mode === 'dia' || G.mode === 'av';
+  // mecánicas que el jugador todavía no vio: con Cómo jugar corto, primero aparece la tarjeta de cada una
+  const nuevas = juego ? (G.L.mechs || G.L.mech || []).filter(m => MECH[m] && !P.vistas[m]) : [];
+  if (nuevas.length) {
+    nuevas.forEach(m => P.vistas[m] = true); save();
+    if (!TUT.largo()) return TUT.mechCards(nuevas, showTapa);
+  }
+  const tipTapa = G.tip && !(juego && !TUT.largo());   // con Cómo jugar corto la explicación ya estuvo en la tarjeta; queda abajo de la góndola
   const [h] = lv ? [G.L.title || ''] : (TITLES[G.n] || ['']);
   const vol = lv ? (G.L.volanta || '') : (NEW[G.n] || '');
   const label = G.mode === 'dia' ? `Partida ${G.n} de ${P12.partidasDia()}` : G.mode === 'av' ? `Nivel ${G.n} · ${PROC.barrioOf(G.n).name}` : `Nivel ${G.n} de ${LEVELS.length}`;
@@ -750,7 +757,7 @@ function showTapa() {
   m.innerHTML = `<div class="tapa" role="dialog" aria-modal="true" aria-label="${label}">
     <div class="mast"><b>Página/12</b><span>${label}</span></div><div class="redline"></div>
     ${vol ? `<div class="volanta">${vol}</div>` : ''}<h2>${h}</h2>
-    ${G.tip ? `<p>${G.tip}</p>` : ''}
+    ${tipTapa ? `<p>${G.tip}</p>` : ''}
     <div class="btns"><button class="tag small" data-t="map">${G.mode === 'dia' ? 'Inicio' : 'Niveles'}</button><button class="tag red" data-t="play">Jugar</button></div></div>`;
   m.classList.remove('off');
   m.querySelector('[data-t="play"]').onclick = () => { m.classList.add('off'); LOG('jugar'); if (G.mode === 'dia') DIA.begin(); };
@@ -1548,7 +1555,7 @@ PROC = (() => {
     const L = { n, cols: q.cols, rows: q.rows, par: g.par, s3: s3For(g.par) + extra, s2: s2For(g.par) + extra,
       moves: (intro ? g.par * 2 + 2 : movesFor(g.par)) + extra, shelves: g.sh, wrap: g.wrap, belt: g.belt, goal: g.goal, D: +q.d.toFixed(2), mechs,
       title: HEADS[t][(Math.random() * 2) | 0], volanta: '', tip: null };
-    if (intro) { Object.assign(L, { title: MECH[b.nuevo].title, volanta: MECH[b.nuevo].vol, tip: MECH[b.nuevo].tip }); P.vistas[b.nuevo] = true; save(); }
+    if (intro) Object.assign(L, { title: MECH[b.nuevo].title, volanta: MECH[b.nuevo].vol, tip: MECH[b.nuevo].tip });
     else if (n === b.from) L.volanta = 'Barrio nuevo: ' + b.name;
     return L;
   }
@@ -1650,13 +1657,13 @@ const DIA = (() => {
   function levelFor(k) {
     const i = hash(S.fecha + ':' + k) % DIA_LEVELS.length, L = DIA_LEVELS[i];
     const ts = [...new Set(L.shelves.flatMap(x => x.f).filter(t => t && HEADS[t]))], t = ts[hash(S.fecha + 't' + k) % ts.length] || 'diario';
-    // la primera vez que aparece una mecánica, su explicación va en la tapa y abajo de la góndola
-    const nuevas = (L.mech || []).filter(m => MECH[m] && !(P.vistas || {})[m]);
+    // la primera vez que aparece una mecánica, su explicación va abajo de la góndola (y antes, su tarjeta: ver showTapa)
+    const nuevas = (L.mech || []).filter(m => MECH[m] && !P.vistas[m]);
     return Object.assign({}, L, { n: k + 1, title: HEADS[t][hash(S.fecha) % 2], volanta: 'Partida del día',
-      tip: nuevas.length ? nuevas.map(m => MECH[m].tip).join(' ') : null, nuevas, idx: i });
+      tip: nuevas.length ? nuevas.map(m => MECH[m].tip).join(' ') : null, idx: i });
   }
   function play() { if (!left()) return HOME.show(); const k = S.jugadas.length; cur = { k, started: false }; startLevel(k + 1, false, levelFor(k), 'dia'); }
-  function begin() { if (!cur || cur.started) return; cur.started = true; (G.L.nuevas || []).forEach(m => P.vistas[m] = true); save(); S.jugadas.push({ nivel: G.L.idx + 1, estado: 'jugando' }); store(); }
+  function begin() { if (!cur || cur.started) return; cur.started = true; S.jugadas.push({ nivel: G.L.idx + 1, estado: 'jugando' }); store(); }
   const started = () => !!(cur && cur.started);
   function done(won, stars) {
     if (!started()) return;
@@ -1669,7 +1676,9 @@ const DIA = (() => {
     cur = null;
   }
   const endButtons = () => '<button class="tag" data-a="home">Inicio</button>' + (left() ? '<button class="tag red" data-a="nextdia">Siguiente partida</button>' : '');
-  return { play, begin, started, done, endButtons, left };
+  // debug: vuelve a habilitar las partidas de hoy
+  function reset() { S = { fecha: today(), jugadas: [] }; cur = null; store(); }
+  return { play, begin, started, done, endButtons, left, reset };
 })();
 
 /* ---------- Inicio: Partida del día y Aventura ---------- */
@@ -1704,7 +1713,8 @@ const CFG = (() => {
       <button class="tag cfgbtn" id="cfgReset">Borrar progreso</button>
       ${P12.prueba ? `<div class="cfgsec">Debug</div>
       <button class="tag cfgbtn" id="cfgAso">Asociado: ${P12.asociado ? 'SÍ' : 'NO'}</button>
-      <button class="tag cfgbtn" id="cfgTutLen">Cómo jugar: ${TUT.largo() ? 'largo' : 'corto'}</button>` : ''}
+      <button class="tag cfgbtn" id="cfgTutLen">Cómo jugar: ${TUT.largo() ? 'largo' : 'corto'}</button>
+      ${midDia ? '' : '<button class="tag cfgbtn" id="cfgDia">Reiniciar Partida del día</button>'}` : ''}
       <div class="btns"><button class="tag red" data-a="close">Cerrar</button></div></div>`);
     const vol = $('#cfgVol');
     vol.oninput = () => { P.vol = +vol.value; save(); };
@@ -1717,6 +1727,12 @@ const CFG = (() => {
       try { localStorage.setItem('kiosco-asociado-prueba', P12.asociado ? '0' : '1'); } catch (e) {}
       if (!$('#home').classList.contains('off')) HOME.show();
       open();
+    };
+    if ($('#cfgDia')) $('#cfgDia').onclick = () => {
+      DIA.reset();
+      if (!$('#home').classList.contains('off')) HOME.show();
+      $('#cfgDia').textContent = 'Partida del día reiniciada';
+      $('#cfgDia').disabled = true;
     };
     if ($('#cfgTutLen')) $('#cfgTutLen').onclick = () => {
       try { localStorage.setItem('kiosco-tut-largo', TUT.largo() ? '0' : '1'); } catch (e) {}
@@ -1821,7 +1837,15 @@ const TUT = (() => {
     const fn = onDone; onDone = null; G.over = true;
     if (fn) fn(); else HOME.show();
   }
-  return { run, start, allow, after, cards, close: finish, largo };
+  // tarjeta de cada mecánica nueva, antes de la tapa del nivel donde aparece por primera vez
+  function mechCards(list, then, k = 0) {
+    const [title, pic, txt] = CARDS.find(c => c[0] === MECH[list[k]].name), lastOne = k === list.length - 1;
+    modal(`<div class="sign"><h1>${title}</h1></div><div class="body">
+      <div class="tutpic">${pic}</div><p>${txt}</p>
+      <div class="btns"><button class="tag red" id="tutNext">${lastOne ? 'Listo' : 'Siguiente'}</button></div></div>`);
+    $('#tutNext').onclick = () => lastOne ? then() : mechCards(list, then, k + 1);
+  }
+  return { run, start, allow, after, cards, close: finish, largo, mechCards };
 })();
 
 if (TEST) { buildMap(); show('#map'); } else HOME.show();
