@@ -255,6 +255,7 @@ button.tag:disabled{opacity:.5}
 .cfgrow{display:flex;align-items:center;gap:10px;margin:6px 0 14px;font-weight:600;text-transform:uppercase;letter-spacing:.8px}
 .cfgrow input[type=range]{flex:1;accent-color:var(--red);height:32px}
 .cfgbtn{display:flex;width:100%;margin:8px 0}
+.rec{font-weight:700;color:var(--red,#c0262d);text-transform:uppercase;letter-spacing:.8px}
 .cfgsec{margin:18px 0 4px;padding-top:10px;border-top:1px dashed currentColor;font-weight:600;text-transform:uppercase;letter-spacing:.8px;opacity:.7}
 </style>
 </head>
@@ -1201,7 +1202,7 @@ async function win() {
   if (G !== g0) return;
   LOG('gana', { usados: G.used, estrellas: stars, puntos: G.score });
   const last = G.proc ? G.n >= PROC.MAX : (G.n === LEVELS.length || (TEST && G.n >= TEST.to));
-  modal(resultCard(G.goal ? '¡Pedido listo!' : '¡Góndola vacía!', left, base, G.proc ? PROC.breakNote() : '',
+  modal(resultCard(G.goal ? '¡Pedido listo!' : '¡Góndola vacía!', left, base, G.proc ? PROC.breakNote() : G.mode === 'dia' ? DIA.note : '',
     G.mode === 'dia' ? DIA.endButtons()
     : `<button class="tag" data-a="retry">Reiniciar</button>${last ? (TEST ? '<button class="tag red" data-a="fin">Terminar</button>' : '<button class="tag red" data-a="map">Niveles</button>') : '<button class="tag red" data-a="next">Siguiente nivel</button>'}`));
   const card = $('#modal .card');
@@ -1232,7 +1233,7 @@ function lose(why) {
   if (G.proc) PROC.done(false);
   if (G.mode === 'dia') DIA.done(false, 0, why === 'quit');
   modal(resultCard(why === 'moves' ? 'Sin movimientos' : why === 'quit' ? 'Partida terminada' : 'Sin lugar libre', G.L.moves - G.used, G.score,
-    why === 'stuck' ? '<p>Ningún producto se puede mover. Dejá lugar libre en algún estante.</p>' : '',
+    (why === 'stuck' ? '<p>Ningún producto se puede mover. Dejá lugar libre en algún estante.</p>' : '') + (G.mode === 'dia' ? DIA.note : ''),
     G.mode === 'dia' ? DIA.endButtons()
     : (TEST ? '<button class="tag" data-a="saltar">Saltar</button>' : '<button class="tag" data-a="map">Niveles</button>') + '<button class="tag red" data-a="retry">Reiniciar</button>'));
 }
@@ -1710,10 +1711,13 @@ const DIA = (() => {
     if (!r.siempre) r.siempre = { fecha: null, puntos: 0 };
     return r;
   }
+  let note = '';   // línea para la tarjeta del final: récord nuevo o el mejor puntaje de siempre
   function record(pts) {
     const r = records();
     if (pts > r.dia.puntos) r.dia.puntos = pts;
-    if (pts > r.siempre.puntos) r.siempre = { fecha: today(), puntos: pts };
+    const nuevo = pts > r.siempre.puntos;
+    if (nuevo) r.siempre = { fecha: today(), puntos: pts };
+    note = nuevo ? '<p class="rec">¡Récord nuevo!</p>' : r.siempre.puntos ? `<p>Tu mejor puntaje: ${r.siempre.puntos}</p>` : '';
     if (!TEST) try { localStorage.setItem(RKEY, JSON.stringify(r)); } catch (e) {}
     return r;
   }
@@ -1749,7 +1753,7 @@ const DIA = (() => {
   const endButtons = () => '<button class="tag" data-a="home">Inicio</button>' + (left() ? '<button class="tag red" data-a="nextdia">Siguiente partida</button>' : '');
   // debug: vuelve a habilitar las partidas de hoy
   function reset() { S = { fecha: today(), jugadas: [] }; cur = null; ready = null; store(); }
-  return { play, begin, started, done, endButtons, left, reset, records };
+  return { play, begin, started, done, endButtons, left, reset, records, get note() { return note; } };
 })();
 
 /* ---------- Inicio: Partida del día y Aventura ---------- */
