@@ -1702,6 +1702,21 @@ const DIA = (() => {
   let S = load(), cur = null;
   const store = () => { if (TEST) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
   function left() { S = load(); return Math.max(0, P12.partidasDia() - S.jugadas.length); }
+  // Mejores puntajes: del día y de siempre. Cuenta toda partida terminada (ganada, perdida o abandonada: termina con los puntos que tenía).
+  const RKEY = 'kiosco-record';
+  function records() {
+    let r = {}; try { r = JSON.parse(localStorage.getItem(RKEY) || '{}'); } catch (e) {}
+    if (!r.dia || r.dia.fecha !== today()) r.dia = { fecha: today(), puntos: 0 };
+    if (!r.siempre) r.siempre = { fecha: null, puntos: 0 };
+    return r;
+  }
+  function record(pts) {
+    const r = records();
+    if (pts > r.dia.puntos) r.dia.puntos = pts;
+    if (pts > r.siempre.puntos) r.siempre = { fecha: today(), puntos: pts };
+    if (!TEST) try { localStorage.setItem(RKEY, JSON.stringify(r)); } catch (e) {}
+    return r;
+  }
   // el nivel se arma con el mismo algoritmo de Aventura, según cómo jugás (PROC.makeDia).
   // Si saliste desde la tapa sin tocar Jugar, el mismo nivel te espera la próxima vez.
   let ready = null;
@@ -1723,15 +1738,18 @@ const DIA = (() => {
     Object.assign(j, { estado: won ? 'ganó' : 'perdió', puntos: G.score, estrellas: won ? stars : 0, movimientos: G.used });
     store();
     PROC.learnDia(won, stars, quit);
+    const R = record(G.score);
     // medalla para la plataforma: oro, plata o bronce según las estrellas (en el juego se ven estrellas)
+    // el ranking es de puntaje más alto: van el mejor del día y el mejor de siempre
     P12.enviar('partida_del_dia', { fecha: S.fecha, partida: cur.k + 1, dificultad: j.dificultad, gano: won, puntos: G.score,
-      estrellas: j.estrellas, medalla: won ? ['', 'bronce', 'plata', 'oro'][stars] : null, movimientos: G.used });
+      estrellas: j.estrellas, medalla: won ? ['', 'bronce', 'plata', 'oro'][stars] : null, movimientos: G.used,
+      mejorDelDia: R.dia.puntos, mejorDeSiempre: R.siempre.puntos, fechaMejorDeSiempre: R.siempre.fecha });
     cur = null;
   }
   const endButtons = () => '<button class="tag" data-a="home">Inicio</button>' + (left() ? '<button class="tag red" data-a="nextdia">Siguiente partida</button>' : '');
   // debug: vuelve a habilitar las partidas de hoy
   function reset() { S = { fecha: today(), jugadas: [] }; cur = null; ready = null; store(); }
-  return { play, begin, started, done, endButtons, left, reset };
+  return { play, begin, started, done, endButtons, left, reset, records };
 })();
 
 /* ---------- Inicio: Partida del día y Aventura ---------- */
@@ -1793,13 +1811,13 @@ const CFG = (() => {
     };
     if ($('#cfgReset')) $('#cfgReset').onclick = () => {
       modal(`<div class="sign"><h1>¿Borrar progreso?</h1></div><div class="body">
-        <p>Se borran tus niveles y estrellas de Aventura${P12.prueba ? ' y tus partidas de hoy' : ''}. Cómo jugar vuelve a aparecer. No se puede deshacer.</p>
+        <p>Se borran tus niveles y estrellas de Aventura${P12.prueba ? ', tus partidas de hoy y tus mejores puntajes de la Partida del día' : ''}. Cómo jugar vuelve a aparecer. No se puede deshacer.</p>
         <div class="btns"><button class="tag" data-a="close">Cancelar</button><button class="tag red" id="cfgResetOk">Borrar</button></div></div>`);
       $('#cfgResetOk').onclick = () => {
         // también se olvida que viste Cómo jugar y las tarjetas de las mecánicas
         PROC.reset(); P.best = {}; P.open = 1; P.tut = false; P.vistas = {}; save();
         // las partidas de hoy solo se borran en la prueba: dentro de Página/12 sería jugar la Partida del día de nuevo
-        if (P12.prueba) DIA.reset();
+        if (P12.prueba) { DIA.reset(); try { localStorage.removeItem('kiosco-record'); } catch (e) {} }
         $('#modal').classList.add('off');
         HOME.show();
       };
