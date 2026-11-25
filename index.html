@@ -1710,7 +1710,7 @@ const CFG = (() => {
     modal(`<div class="sign"><h1>Configuración</h1></div><div class="body">
       <label class="cfgrow"><span>Volumen</span><input type="range" min="0" max="100" step="5" id="cfgVol" value="${P.vol}" aria-label="Volumen"></label>
       ${midDia ? '' : '<button class="tag cfgbtn" id="cfgTut">Cómo jugar</button>'}
-      <button class="tag cfgbtn" id="cfgReset">Borrar progreso</button>
+      ${midDia ? '' : '<button class="tag cfgbtn" id="cfgReset">Borrar progreso</button>'}
       ${P12.prueba ? `<div class="cfgsec">Debug</div>
       <button class="tag cfgbtn" id="cfgAso">Asociado: ${P12.asociado ? 'SÍ' : 'NO'}</button>
       <button class="tag cfgbtn" id="cfgTutLen">Cómo jugar: ${TUT.largo() ? 'largo' : 'corto'}</button>
@@ -1738,14 +1738,17 @@ const CFG = (() => {
       try { localStorage.setItem('kiosco-tut-largo', TUT.largo() ? '0' : '1'); } catch (e) {}
       open();
     };
-    $('#cfgReset').onclick = () => {
+    if ($('#cfgReset')) $('#cfgReset').onclick = () => {
       modal(`<div class="sign"><h1>¿Borrar progreso?</h1></div><div class="body">
-        <p>Se borran tus niveles y estrellas de Aventura. No se puede deshacer.</p>
+        <p>Se borran tus niveles y estrellas de Aventura${P12.prueba ? ' y tus partidas de hoy' : ''}. Cómo jugar vuelve a aparecer. No se puede deshacer.</p>
         <div class="btns"><button class="tag" data-a="close">Cancelar</button><button class="tag red" id="cfgResetOk">Borrar</button></div></div>`);
       $('#cfgResetOk').onclick = () => {
-        PROC.reset(); P.best = {}; P.open = 1; save(); $('#modal').classList.add('off');
-        if (!$('#map').classList.contains('off')) PROC.map();
-        else if (G && G.mode === 'av' && !$('#game').classList.contains('off')) PROC.map();
+        // también se olvida que viste Cómo jugar y las tarjetas de las mecánicas
+        PROC.reset(); P.best = {}; P.open = 1; P.tut = false; P.vistas = {}; save();
+        // las partidas de hoy solo se borran en la prueba: dentro de Página/12 sería jugar la Partida del día de nuevo
+        if (P12.prueba) DIA.reset();
+        $('#modal').classList.add('off');
+        HOME.show();
       };
     };
   }
