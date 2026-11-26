@@ -290,6 +290,9 @@ button.tag:disabled{opacity:.5}
   #game>.bottom{grid-column:1;grid-row:5;flex-direction:column;justify-content:flex-end}
   #game>.bottom .tag{max-width:none;flex:none}
   #game>#board{grid-column:2;grid-row:1/-1;margin:6px 6px 6px 0}
+  /* el consejo va en la columna, centrado en el hueco entre los datos y los botones (placeTips) */
+  #game>.bottom>.side{position:static;margin:auto 0;flex:none}
+  #game>.bottom>.bubble.side{display:block;background:#fbf3dc;border:0;border-left:5px solid var(--red);border-radius:4px;box-shadow:none;padding:10px 12px 10px 14px}
   #home{display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:auto 1fr}
   #home>.top{grid-column:1/-1}
   #home .vitrina{padding:10px 10px 20px 24px}
@@ -806,7 +809,7 @@ function startLevel(n, quiet, Lobj, mode) {
   $('#modal').classList.add('off');
   show('#game');
   hideTip(); G.tipH = 0;
-  if (G.tip) { showTip(); G.tipH = tipEl.offsetHeight + 10; }
+  if (G.tip) { showTip(); placeTips(); }
   requestAnimationFrame(() => { layout(); render(true);
     if (G.mode === 'tut') TUT.start();
     else if (G.n === 1 && G.mode !== 'dia') setTimeout(() => G && G.n === 1 && !G.used && showMove(findHint()), 600); });
@@ -845,7 +848,8 @@ function layout() {
   const board = $('#board'), W = board.clientWidth, H = board.clientHeight;
   const { cols } = G.L, rows = G.L.rows + (G.nb ? 1 : 0), plank = 13, ratio = 1.5, over = 0.96, peek = .34;
   let gy = 10, gx = 6;
-  const tipH = G.tipH || 0, HH = H - tipH;
+  // abajo de la rotativa va su cartel: le dejo lugar para que no lo tape el consejo ni se salga de la pantalla
+  const tipH = G.tipH || 0, HH = H - tipH - (G.nb ? 22 : 0);
   let iw = Math.min((W - (cols - 1) * gx) / cols * .985 / 3, 84);
   // alto del estante: el frente más un escalón por cada capa de atrás visible (hasta 2)
   const depth = Math.max(1, ...G.sh.map(x => Math.min(2, x.b.length)));
@@ -1418,6 +1422,23 @@ function showTip() {
   $('#board').appendChild(tipEl);
 }
 function hideTip() { if (tipEl) { tipEl.remove(); tipEl = null; } }
+// Dónde va el consejo (y el texto del tutorial). En horizontal, en la columna de la izquierda, entre los datos y
+// los botones. Si ahí no entra completo, o en vertical, va abajo de la góndola y le reservo ese alto (G.tipH).
+const LAND = matchMedia('(orientation: landscape) and (min-width: 600px)');
+function placeTips() {
+  if (!G) return;
+  const board = $('#board'), bot = $('#game>.bottom'), game = $('#game');
+  const els = [...document.querySelectorAll('#game .bubble, #game .tutbox')];
+  const abajo = () => els.forEach(e => { e.classList.remove('side'); board.appendChild(e); });
+  abajo();
+  if (LAND.matches && els.length) {
+    els.forEach(e => { e.classList.add('side'); bot.prepend(e); });
+    const last = bot.lastElementChild, sobra = game.getBoundingClientRect().bottom - (last ? last.getBoundingClientRect().bottom : 0);
+    if (game.scrollHeight > game.clientHeight + 1 || sobra < 8) abajo();
+  }
+  const h = Math.max(0, ...els.filter(e => e.parentNode === board).map(e => +(e.dataset.h || e.offsetHeight)));
+  G.tipH = h ? h + 10 : 0;
+}
 
 $('#btnRetry').onclick = () => { LOG('reiniciar_toque'); if (!G) return; if (G.used && !G.over) confirmRetry(); else startLevel(G.n, true); };
 $('#btnUndo').onclick = undo;
@@ -1426,7 +1447,7 @@ $('#btnMap').onclick = () => {
   goMap();
 };
 document.querySelectorAll('.cfg').forEach(b => b.onclick = () => CFG.open());
-window.addEventListener('resize', () => { if (G && !$('#game').classList.contains('off')) { layout(); render(true); } });
+window.addEventListener('resize', () => { if (G && !$('#game').classList.contains('off')) { placeTips(); layout(); render(true); } });
 
 /* ---------- modo prueba: mouse, envío y pantallas ---------- */
 if (TEST) {
@@ -2068,10 +2089,11 @@ const TUT = (() => {
     box = document.createElement('div'); box.className = 'tutbox'; $('#board').appendChild(box);
     // reservo lugar para el texto más largo, así la góndola no salta entre pasos
     box.textContent = STEPS.reduce((a, s) => s[0].length > a.length ? s[0] : a, '');
-    G.tipH = box.offsetHeight + 10; layout(); render(true);
+    box.style.minHeight = ''; placeTips(); box.style.minHeight = box.offsetHeight + 'px'; layout(); render(true);
     if (skip) skip.remove();
     skip = document.createElement('button'); skip.className = 'tag'; skip.textContent = fromCfg ? 'Cerrar' : 'Saltar';
     skip.onclick = finish; $('.bottom').appendChild(skip);
+    placeTips(); layout(); render(true);   // con el botón ya puesto, reviso que el texto siga entrando en la columna
     seen = { sold: false, revealed: false }; prev = state();
     step();
     clearInterval(watch); watch = setInterval(guide, 400);
