@@ -261,10 +261,10 @@ button.tag:disabled{opacity:.5}
 .tutpic .stat{min-width:120px}
 .tutstep{font-size:12px;color:#6b4a2b;letter-spacing:1px;margin-top:6px}
 /* Configuración */
-.cfgrow{display:flex;align-items:center;gap:10px;margin:6px 0 14px;font-weight:600;text-transform:uppercase;letter-spacing:.8px}
-.cfgrow input[type=range]{flex:1;accent-color:var(--red);height:32px}
 .cfgbtn{display:flex;width:100%;margin:8px 0}
 .rec{font-weight:700;color:var(--red,#c0262d);text-transform:uppercase;letter-spacing:.8px}
+.avtiles{display:flex;gap:8px;justify-content:center}
+.avtiles .lvl{width:56px;height:56px;pointer-events:none}
 .cfgsec{margin:18px 0 4px;padding-top:10px;border-top:1px dashed currentColor;font-weight:600;text-transform:uppercase;letter-spacing:.8px;opacity:.7}
 /* Inicio: vidriera del kiosco con productos que se mueven (solo decoración: no reacciona al toque y va algo más oscura) */
 .vitrina{display:flex;flex-direction:column;justify-content:center;gap:22px;padding:14px 18px 4px}
@@ -879,10 +879,10 @@ const TITLES = (() => {
 const STAR = on => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2 6.4 20.2l1.1-6.3L2.9 9.5l6.3-.9z" fill="${on ? '#f2b632' : 'rgba(0,0,0,.12)'}" stroke="${on ? '#8f5527' : '#6b4a2b'}" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
 
 /* ---------- progreso ---------- */
-// vol: volumen de 0 a 100; tut: ya vio Cómo jugar
-let P = { best: {}, open: 1, all: false, vol: 70, tut: false, vistas: {} };
-try { const o = JSON.parse(localStorage.getItem('kiosco-p12') || '{}'); if (o.snd === false && o.vol == null) o.vol = 0; Object.assign(P, o); } catch (e) {}
-delete P.snd; // versión anterior: sonido prendido o apagado
+// tut: ya vio Cómo jugar; avIntro: ya vio la bienvenida de Aventura
+let P = { best: {}, open: 1, all: false, tut: false, avIntro: false, vistas: {} };
+try { Object.assign(P, JSON.parse(localStorage.getItem('kiosco-p12') || '{}')); } catch (e) {}
+delete P.snd; delete P.vol; // versiones anteriores tenían sonido (se sacó el 26/11/2026)
 const save = () => { if (TEST) return; try { localStorage.setItem('kiosco-p12', JSON.stringify(P)); } catch (e) {} };
 
 /* ---------- Página/12 ----------
@@ -929,29 +929,6 @@ const AV_ASO = 'Los niveles 1 a 10 de Aventura son para todos. Desde el nivel 11
 // cartel de lo exclusivo para Asociados: Asociate abre la página de Página/12 en otra pestaña, así no se pierde el juego
 const exclusivo = txt => modal(`<div class="sign"><h1>Exclusivo para Asociados</h1></div><div class="body"><p>${txt}</p>
     <div class="btns"><button class="tag" data-a="close">Volver</button><button class="tag red" data-a="asociate">Asociate</button></div></div>`);
-
-/* ---------- sonido ---------- */
-let AC = null;
-function tone(f, d, type, vol, when) {
-  if (!P.vol) return;
-  try {
-    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
-    const t = AC.currentTime + (when || 0), o = AC.createOscillator(), g = AC.createGain();
-    o.type = type || 'triangle'; o.frequency.setValueAtTime(f, t);
-    g.gain.setValueAtTime((vol || .12) * P.vol / 70, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
-    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d);
-  } catch (e) {}
-}
-const sfx = {
-  pick: () => tone(520, .08, 'triangle', .08),
-  drop: () => { tone(300, .1, 'sine', .14); tone(180, .08, 'triangle', .06, .02); },
-  match: () => [523, 659, 784].forEach((f, i) => tone(f, .22, 'triangle', .11, i * .06)),
-  win: () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, .25, 'square', .05, i * .1)),
-  lose: () => [392, 330, 262].forEach((f, i) => tone(f, .3, 'sawtooth', .04, i * .16)),
-  open: () => { for (let i = 0; i < 6; i++) tone(160 + i * 40, .06, 'square', .03, i * .05); },
-  tick: k => tone(600 + Math.min(k, 20) * 18, .05, 'triangle', .05),
-  star: i => [784, 988, 1175].slice(0, 2).forEach((f, j) => tone(f + i * 120, .18, 'triangle', .09, j * .07))
-};
 
 /* ---------- mapa ---------- */
 function buildMap() {
@@ -1193,7 +1170,7 @@ function render(instant) {
     const sh = d.querySelector('.shutter');
     if (sh) {
       const left = x.k - G.m;
-      if (left <= 0 && !sh.classList.contains('open')) { sh.classList.add('open'); sfx.open(); }
+      if (left <= 0 && !sh.classList.contains('open')) { sh.classList.add('open'); }
       else if (left > 0) sh.classList.remove('open'), sh.querySelector('.tag').innerHTML = left === 1 ? 'FALTA<b>1</b>VENTA' : `FALTAN<b>${left}</b>VENTAS`;
     }
   });
@@ -1261,7 +1238,7 @@ $('#board').addEventListener('pointermove', e => {
   const p = bxy(e);
   if (!drag.moved && Math.hypot(p.x - drag.x0, p.y - drag.y0) < 7) return;
   const el = els.get(drag.it.id);
-  if (!drag.moved) { drag.moved = true; clearSel(); clearHint(); el.classList.add('drag'); sfx.pick(); LOG('agarrar', { modo: 'arrastre', i: el.shelf, s: el.slot, tipo: drag.it.t }); }
+  if (!drag.moved) { drag.moved = true; clearSel(); clearHint(); el.classList.add('drag'); LOG('agarrar', { modo: 'arrastre', i: el.shelf, s: el.slot, tipo: drag.it.t }); }
   el.style.transform = `translate(${p.x - G.geo.vw / 2}px,${p.y - G.geo.ih * .75}px) scale(1.15)`;
   el.lx = p.x - G.geo.vw / 2; el.ly = p.y - G.geo.ih * .75;
   const t = shelfAt(p.x, p.y);
@@ -1286,7 +1263,7 @@ function endDrag(e) {
   if (d.it && (!G.sel || G.sel.shelf === els.get(d.it.id).shelf)) {
     const el = els.get(d.it.id);
     if (G.sel === el) { clearSel(); LOG('soltar_mal', { modo: 'toque', de: el.shelf, a: el.shelf, motivo: 'mismo' }); return; }
-    clearSel(); G.sel = el; el.classList.add('sel'); sfx.pick(); clearHint(); LOG('agarrar', { modo: 'toque', i: el.shelf, s: el.slot, tipo: el.it.t }); return;
+    clearSel(); G.sel = el; el.classList.add('sel'); clearHint(); LOG('agarrar', { modo: 'toque', i: el.shelf, s: el.slot, tipo: el.it.t }); return;
   }
   if (G.sel) {
     const t = shelfAt(p.x, p.y), el = G.sel;
@@ -1296,7 +1273,7 @@ function endDrag(e) {
     }
     LOG('soltar_mal', { modo: 'toque', de: el.shelf, a: t, motivo: dropWhy(t, el.shelf) });
     clearSel();
-    if (d.it) { const o = els.get(d.it.id); G.sel = o; o.classList.add('sel'); sfx.pick(); }
+    if (d.it) { const o = els.get(d.it.id); G.sel = o; o.classList.add('sel'); }
   }
 }
 $('#board').addEventListener('pointerup', endDrag);
@@ -1330,7 +1307,7 @@ function doMove(a, sa, b, sb, how) {
   LOG('mover', { a, sa, b, sb, tipo: G.sh[a].f[sa].t, estado: compact(), usados: G.used });
   const it = G.sh[a].f[sa]; G.sh[a].f[sa] = null; G.sh[b].f[sb] = it; G.used++;
   const mel = els.get(it.id); if (mel && mel.lx == null) { mel.lx = slotXY(a, sa, 0).x; mel.ly = slotXY(a, sa, 0).y; }
-  render(); sfx.drop();
+  render();
   const todo = [b, a].filter(i => needsResolve(G.sh[i]));
   todo.forEach(i => G.lock.add(i));
   if (todo.length) render();
@@ -1356,7 +1333,7 @@ async function resolveShelf(i, g0) {
       for (const it of trio) if (it.w) unwrap(it);
       if (trio.some(it => it.wasW)) await wait(260);
       trio.forEach(it => els.get(it.id).classList.add('match'));
-      sfx.match();
+     
       await wait(190);
       if (G !== g0) return;
       burst(i);
@@ -1391,7 +1368,7 @@ function openBoxes(i, g0) {
       if (el) { el.classList.add('boxgone'); setTimeout(() => { el.remove(); els.delete(it.id); }, 360); }
       return null;
     });
-    sfx.open();
+   
     if (j !== i && needsResolve(y) && !G.lock.has(j)) {
       G.lock.add(j);
       resolveShelf(j, g0).then(() => { if (G === g0) { G.lock.delete(j); render(); scheduleEnd(); } });
@@ -1501,7 +1478,7 @@ async function win() {
     if (!prev || prev.stars < stars || prev.score < G.score) P.best[G.n] = { stars: Math.max(stars, prev ? prev.stars : 0), score: Math.max(G.score, prev ? prev.score : 0) };
     P.open = Math.max(P.open, Math.min(LEVELS.length, G.n + 1)); save();
   }
-  sfx.win();
+ 
   await wait(350);
   if (G !== g0) return;
   LOG('gana', { usados: G.used, estrellas: stars, puntos: G.score });
@@ -1520,24 +1497,24 @@ async function win() {
   for (let k = 1; k <= left; k++) {
     if (!alive()) return;
     $('#rMoves').textContent = left - k; $('#rScore').textContent = base + k * 20;
-    bumpEl($('#rMoves')); bumpEl($('#rScore')); flyPlus('+20'); sfx.tick(k);
+    bumpEl($('#rMoves')); bumpEl($('#rScore')); flyPlus('+20');
     await wait(step);
   }
   if (!alive()) return;
   $('#rMovesBox').classList.add('zero');
   await wait(250);
   // Partida del día: aparece la medalla. Aventura: se llenan las estrellas ganadas
-  if (G.mode === 'dia') { const md = $('#rMedal'); if (md) { md.style.visibility = ''; md.classList.add('on'); sfx.star(1); } return; }
+  if (G.mode === 'dia') { const md = $('#rMedal'); if (md) { md.style.visibility = ''; md.classList.add('on'); } return; }
   for (let i = 0; i < stars; i++) {
     if (!alive()) return;
     const old = $('#rStars').children[i];
     old.outerHTML = STAR(true).replace('<svg ', '<svg class="on" ');
-    sfx.star(i); await wait(280);
+    await wait(280);
   }
 }
 function lose(why) {
   LOG('pierde', { motivo: why, usados: G.used, quedan: compact().sh.reduce((a, x) => a + x.f.filter(Boolean).length + x.b.reduce((c, r) => c + r.filter(Boolean).length, 0), 0) });
-  G.over = true; sfx.lose();
+  G.over = true;
   if (G.proc) PROC.done(false);
   if (G.mode === 'dia') G.medal = DIA.done(false, 0);
   modal(resultCard(why === 'moves' ? 'Sin movimientos' : why === 'quit' ? 'Partida terminada' : 'Sin lugar libre', G.L.moves - G.used, G.score,
@@ -1583,7 +1560,7 @@ function undo() {
   clearTimeout(G.endT); clearHint(); clearSel();
   Object.assign(G, { sh: s.sh, used: s.used, score: s.score, m: s.m, g: s.g || 0 });
   document.querySelectorAll('#board .it, #board .pt, #board .float').forEach(e => e.remove()); els.clear();
-  render(true); sfx.pick();
+  render(true);
   if (G.mode === 'dia') DIA.guardar();
 }
 
@@ -2043,8 +2020,9 @@ PROC = (() => {
    No Asociados: 1 partida por día. Asociados: la primera del día es esa; después siguen las 50 «extra» (las mismas para todos),
    en orden y sin límite. El orden sigue de un día al otro (kiosco-extra) y después de la 50 vuelve a la 1. A la App va su mejor partida.
    Se guarda en este navegador después de cada movimiento: si se sale a la mitad, al volver sigue donde quedó.
-   Medalla (solo en este modo): bronce por jugar, plata ganando con 2 estrellas, oro ganando con 3.
-   A la App va score = puntos + bonus de medalla (plata +5000, oro +10000): así los umbrales del Panel (0 / 5000 / 10000)
+   Medalla (solo en este modo): bronce ganando con 1 estrella, plata con 2, oro con 3. Perder no da medalla y no se manda nada a la App
+   (la guía de P12 no acepta mandar una partida sin medalla). A la App va la mejor partida ganada del día,
+   con score = puntos + bonus de medalla (plata +5000, oro +10000): así los umbrales del Panel (0 / 5000 / 10000)
    dan la misma medalla que el juego. Los puntos de una partida no llegan a 5000.
    Debug: "Partida del día: adaptativa" usa el algoritmo de Aventura (PROC.makeDia), como antes del 25/11/2026. */
 const MEDAL_SVG = m => { const c = { gold: ['#f2b632', '#8f5527'], silver: ['#d5dade', '#5f666d'], bronze: ['#cf8a4c', '#6b3f1d'] }[m];
@@ -2061,7 +2039,7 @@ const DIA = (() => {
   function load() {
     let s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
     if (s.fecha !== fecha()) s = { fecha: fecha(), jugadas: [] };   // un día nuevo empieza de cero
-    s.jugadas.forEach(j => { if (j.estado === 'jugando' && !s.enCurso) Object.assign(j, { estado: 'perdió', medal: 'bronze', puntos: j.puntos || 0, movimientos: j.movimientos || 0 }); });
+    s.jugadas.forEach(j => { if (j.estado === 'jugando' && !s.enCurso) Object.assign(j, { estado: 'perdió', medal: null, puntos: j.puntos || 0, movimientos: j.movimientos || 0 }); });
     return s;
   }
   let S = load(), cur = null, ready = null, enviado = false;
@@ -2074,9 +2052,9 @@ const DIA = (() => {
     if (P12.asociado) return Infinity;
     return S.enCurso ? 1 : Math.max(0, 1 - S.jugadas.length);
   }
-  const terminadas = () => S.jugadas.filter(j => j.medal);
+  const ganadas = () => S.jugadas.filter(j => j.medal);            // solo las ganadas tienen medalla
   const valor = j => j.puntos + BONUS[j.medal];
-  const mejor = () => terminadas().reduce((a, j) => !a || valor(j) > valor(a) ? j : a, null);
+  const mejor = () => ganadas().reduce((a, j) => !a || valor(j) > valor(a) ? j : a, null);
   const contracts = j => ({ medal: j.medal, score: valor(j), points: j.puntos, moves: j.movimientos });
   // Mejores puntajes (puntos sin bonus): del día y de siempre
   function records() {
@@ -2130,7 +2108,7 @@ const DIA = (() => {
     S.enCurso.snap = { sh: G.sh.map(x => ({ f: x.f.map(cloneIt), b: x.b.map(r => r.map(cloneIt)), k: x.k, belt: x.belt })), used: G.used, score: G.score, m: G.m, g: G.g };
     S.enCurso.hints = G.hints; store();
   }
-  const medalOf = (won, stars) => won && stars === 3 ? 'gold' : won && stars === 2 ? 'silver' : 'bronze';
+  const medalOf = (won, stars) => !won ? null : stars === 3 ? 'gold' : stars === 2 ? 'silver' : 'bronze';
   function done(won, stars) {
     if (!started()) return null;
     const j = S.jugadas[cur.k], medal = medalOf(won, stars);
@@ -2148,16 +2126,17 @@ const DIA = (() => {
   const medalHTML = (m, hidden) => `<div class="medalbox${hidden ? '' : ' on'}" id="rMedal"${hidden ? ' style="visibility:hidden"' : ''}>${MEDAL_SVG(m)}<b>${METAL[m]}</b></div>`;
   function endButtons() {
     const otra = P12.asociado && acceso() === 'ok';
-    if (APP.enIframe) return '<button class="tag" data-a="home">Inicio</button>' + (otra ? '<button class="tag" data-a="nextdia">Otra partida</button>' : '') + '<button class="tag red" data-a="stats">Ver estadísticas</button>';
+    // Ver estadísticas solo si hay una partida ganada hoy: una perdida no se manda a la App
+    if (APP.enIframe && mejor()) return '<button class="tag" data-a="home">Inicio</button>' + (otra ? '<button class="tag" data-a="nextdia">Otra partida</button>' : '') + '<button class="tag red" data-a="stats">Ver estadísticas</button>';
     return '<button class="tag" data-a="home">Inicio</button>' + (otra ? '<button class="tag red" data-a="nextdia">Otra partida</button>' : '');
   }
   // la partida de hoy ya se jugó (no Asociado): se ve su resultado
   function verResultado() {
-    const j = mejor(); if (!j) return;
+    const j = mejor() || S.jugadas[S.jugadas.length - 1]; if (!j) return;
     const r = records();
     modal(`<div class="sign"><h1>Partida del día</h1></div><div class="body">
       <div class="hud res"><div class="stat"><span class="k">Puntos</span><span class="v">${j.puntos}</span></div></div>
-      ${medalHTML(j.medal)}
+      ${j.medal ? medalHTML(j.medal) : ''}
       ${r.siempre.puntos ? `<p>Tu mejor puntaje: ${r.siempre.puntos}</p>` : ''}
       <p>Ya jugaste hoy. Mañana hay una partida nueva.</p>
       <div class="btns">${endButtons()}</div></div>`);
@@ -2181,8 +2160,10 @@ const HOME = (() => {
     if (!DIA.left()) return DIA.verResultado();
     enter(() => DIA.play());
   };
+  // Aventura: la primera vez, bienvenida (AVINTRO); si todavía no practicó, Cómo jugar; después arranca el nivel 1
   $('#btnAv').onclick = () => {
-    enter(() => PROC.map());
+    if (P.avIntro) return enter(() => PROC.map());
+    AVINTRO(() => enter(() => PROC.S.n === 1 ? PROC.play() : PROC.map()));
   };
   $('#btnHome').onclick = () => show_();
   // vidriera (solo adorno, no reacciona al toque): un estante arriba y otro abajo de los botones, 4 productos al azar cada uno; cambian cada vez que se vuelve al inicio
@@ -2208,13 +2189,12 @@ const HOME = (() => {
   return { show: show_ };
 })();
 
-/* ---------- Configuración: volumen, Cómo jugar y Borrar progreso ---------- */
+/* ---------- Configuración: Cómo jugar y Borrar progreso ---------- */
 const CFG = (() => {
   function open() {
     // en plena Partida del día no se abre Cómo jugar (usa la pantalla de juego y cortaría la partida)
     const midDia = G && G.mode === 'dia' && !G.over && !$('#game').classList.contains('off');
     modal(`<div class="sign"><h1>Configuración</h1></div><div class="body">
-      <label class="cfgrow"><span>Volumen</span><input type="range" min="0" max="100" step="5" id="cfgVol" value="${P.vol}" aria-label="Volumen"></label>
       ${midDia ? '' : '<button class="tag cfgbtn" id="cfgTut">Cómo jugar</button>'}
       ${midDia ? '' : '<button class="tag cfgbtn" id="cfgReset">Borrar progreso</button>'}
       ${P12.prueba ? `<div class="cfgsec">Debug</div>
@@ -2223,9 +2203,6 @@ const CFG = (() => {
       ${midDia ? '' : `<button class="tag cfgbtn" id="cfgDiaAdapt">Partida del día: ${DIA.adapt() ? 'adaptativa' : 'fija'}</button>`}
       ${midDia ? '' : '<button class="tag cfgbtn" id="cfgDia">Reiniciar Partida del día</button>'}` : ''}
       <div class="btns"><button class="tag red" data-a="close">Cerrar</button></div></div>`);
-    const vol = $('#cfgVol');
-    vol.oninput = () => { P.vol = +vol.value; save(); };
-    vol.onchange = () => sfx.pick();
     if ($('#cfgTut')) $('#cfgTut').onclick = () => {
       const back = !$('#home').classList.contains('off') ? HOME.show : (G && G.mode === 'test') ? () => { buildMap(); show('#map'); } : P12.asociado ? PROC.map : HOME.show;
       TUT.run(back, true);
@@ -2273,6 +2250,21 @@ const CFG = (() => {
    1) Pasos que se hacen sobre una góndola chica: solo vale el movimiento que marca la mano.
    2) Tarjetas con una animación corta para el resto: objetivo, movimientos, estrellas, deshacer, pista y cada mecánica.
    Textos: una idea por paso, acción primero, mismo nombre para cada cosa (GDD, secciones 9.1 y 15.4). */
+/* Bienvenida de Aventura: 3 tarjetas, una idea cada una. Se ve la primera vez que se toca Aventura. */
+function AVINTRO(then, k = 0) {
+  const img = t => `<img src="${SPR(t)}" alt="${nameOf(t)}">`;
+  const tiles = `<div class="avtiles"><span class="tag lvl done"><b>01</b></span><span class="tag lvl cur"><b>02</b></span><span class="tag lvl lock"><b>03</b></span></div>`;
+  const C = [
+    ['Te damos la bienvenida', img('mate') + img('alfajor') + img('sifon'), 'Este es tu kiosco. Tu trabajo es vender todos los productos de la góndola.'],
+    ['Aventura', tiles, 'Aventura tiene niveles en orden. Ganá un nivel para abrir el siguiente. Cada nivel es un poco más difícil.'],
+    ['Algo nuevo', '<div class="mini"><div class="shutter"><span class="tag">FALTAN<b>2</b>VENTAS</span></div></div>', 'Cada tanto aparece algo nuevo, como una persiana. Antes de ese nivel, una tarjeta te explica qué hace.']
+  ];
+  const [title, pic, txt] = C[k], lastOne = k === C.length - 1;
+  modal(`<div class="sign"><h1>${title}</h1></div><div class="body">
+    <div class="tutpic">${pic}</div><p>${txt}</p><div class="tutstep">${k + 1} / ${C.length}</div>
+    <div class="btns"><button class="tag red" id="avNext">${lastOne ? 'Empezar' : 'Siguiente'}</button></div></div>`);
+  $('#avNext').onclick = () => { if (!lastOne) return AVINTRO(then, k + 1); P.avIntro = true; save(); $('#modal').classList.add('off'); then(); };
+}
 const TUT = (() => {
   // Atrás hay 2 sifones y el tercero está adelante en otro estante: lo de atrás no se vende solo al pasar al frente.
   const LEVEL = { n: 0, cols: 2, rows: 2, par: 5, moves: 40, title: '', tip: null, shelves: [
