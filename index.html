@@ -233,7 +233,7 @@ button.tag:disabled{opacity:.5}
 .order.done{background:#cfe3b5}
 /* Inicio */
 #home .menu{display:flex;flex-direction:column;justify-content:center;gap:6px;padding:10px 22px 24px}
-#home .vitrina{flex:1;min-height:0}
+#home .vitrina{flex:1;min-height:0;pointer-events:none}
 .modebtn{display:flex;flex-direction:column;width:100%;min-height:84px;font-size:24px;font-family:var(--slab);font-weight:400;text-transform:none;letter-spacing:0;gap:2px}
 .modebtn .icon{width:22px;height:22px}
 #home .note{margin:2px 0 16px;font-size:14px}
@@ -266,7 +266,7 @@ button.tag:disabled{opacity:.5}
 .cfgbtn{display:flex;width:100%;margin:8px 0}
 .rec{font-weight:700;color:var(--red,#c0262d);text-transform:uppercase;letter-spacing:.8px}
 .cfgsec{margin:18px 0 4px;padding-top:10px;border-top:1px dashed currentColor;font-weight:600;text-transform:uppercase;letter-spacing:.8px;opacity:.7}
-/* Inicio: vidriera del kiosco con productos que se mueven (decoración; tocar uno lo hace saltar) */
+/* Inicio: vidriera del kiosco con productos que se mueven (solo decoración: no reacciona al toque y va algo más oscura) */
 .vitrina{display:flex;flex-direction:column;justify-content:center;gap:22px;padding:14px 18px 4px}
 .vrow{position:relative;display:flex;justify-content:space-around;align-items:flex-end;height:clamp(70px,13vh,120px);padding:0 6px 13px}
 .vrow::after{content:"";position:absolute;left:0;right:0;bottom:0;height:13px;border-radius:3px;
@@ -274,8 +274,7 @@ button.tag:disabled{opacity:.5}
 .vi{position:relative;z-index:1;height:100%;aspect-ratio:2/3;transform-origin:50% 100%;pointer-events:none}
 .vi .bob{width:100%;height:100%;transform-origin:50% 100%;animation:var(--a) var(--d) ease-in-out var(--l) infinite}
 .vi img{width:100%;height:100%;object-fit:contain;object-position:50% 100%;display:block;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
-.vi.hop{animation:hop .5s cubic-bezier(.3,1.4,.5,1)}
-@keyframes hop{40%{transform:translateY(-28%) scale(1.08,.94)}}
+#home .vrow{filter:brightness(.78)}
 .modebtn small{font-family:var(--cond);font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:.85}
 
 /* Pantalla horizontal: los controles van en una columna a la izquierda y la góndola ocupa el resto */
@@ -294,9 +293,9 @@ button.tag:disabled{opacity:.5}
   #game>.tips{grid-column:1;grid-row:5;align-self:center}
   #game>.tips>.side{position:static;margin:0;flex:none}
   #game>.tips>.bubble.side{display:block;background:#fbf3dc;border:0;border-left:5px solid var(--red);border-radius:4px;box-shadow:none;padding:10px 12px 10px 14px}
-  #home{display:grid;grid-template-columns:1fr 1.15fr;grid-template-rows:auto 1fr}
+  #home{display:grid;grid-template-columns:1fr minmax(240px,340px) 1fr;grid-template-rows:auto 1fr;column-gap:16px}
   #home>.top{grid-column:1/-1}
-  #home .vitrina{padding:10px 24px 20px 10px}
+  #home .vitrina{padding:10px 10px 20px;align-self:center}
   #home .vrow{height:clamp(64px,22vh,130px)}
   #home .menu{padding:10px 28px 20px}
   #mapScroll{display:grid;grid-template-columns:1fr 1fr;column-gap:18px;align-content:start}
@@ -421,7 +420,9 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
   #game>.bottom .tag{flex:1 1 0;max-width:none;padding:0 4px;height:min(78%,52px)}
   #home>.top,#map>.top{padding-left:6.6%;padding-right:6.4%}
   #home .vitrina{padding-left:9%;padding-right:9%}
-  #home .menu{padding:28px 11% 8px}
+  #home #vitA{padding-top:10%}
+  #home #vitB{padding-bottom:12%}
+  #home .menu{padding:8px 11% 0}
   #map .scroll{padding:0 8% 16px}
 }
 /* inicio: el cartel del nombre va centrado y Configuración a la derecha */
@@ -473,13 +474,13 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
   #game>.bottom .tag{flex:none;width:100%;max-width:none;height:auto;min-height:0;aspect-ratio:524/180;font-size:clamp(15px,1.5vw,22px);padding:0 0 1%}
 
   /* ---------- inicio ---------- */
-  #home{grid-template-columns:1fr 1.2fr;grid-template-rows:auto 1fr}
+  #home{grid-template-columns:1fr minmax(240px,340px) 1fr;grid-template-rows:auto 1fr;column-gap:clamp(12px,2.5vw,36px)}
   #home>.top{grid-column:1/-1;height:clamp(64px,17vh,130px);padding:12px 0 0}
   #home>.top .sp{width:auto;height:100%}
   #home>.top .cfg{right:0;top:12px}
-  #home .vitrina{margin:clamp(12px,3vh,28px) 0 clamp(16px,5vh,40px);padding:clamp(12px,3vh,30px) clamp(18px,3vw,40px);gap:clamp(14px,4vh,34px);border-radius:8px;
+  #home .vitrina{flex:none;align-self:center;margin:0;padding:clamp(14px,3vh,30px) clamp(12px,1.6vw,26px);gap:clamp(14px,4vh,34px);border-radius:8px;
     background:radial-gradient(100% 90% at 50% 40%,#15225a,#0b1330);box-shadow:inset 0 0 0 2px #c9a04a,inset 0 0 0 5px #0b1024,inset 0 0 0 6px rgba(201,160,74,.45),inset 0 10px 30px rgba(0,0,0,.55)}
-  #home .menu{justify-content:center;gap:14px;padding:0 clamp(16px,4vw,56px);max-width:460px;width:100%;justify-self:center}
+  #home .menu{justify-content:center;gap:14px;padding:0;width:100%}
   #home .modebtn{min-height:clamp(60px,12vh,96px);font-size:clamp(20px,2.1vw,28px)}
 
   /* ---------- mapa: una sola columna centrada ---------- */
@@ -520,13 +521,14 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
     <section id="home" class="screen">
       <div class="top"><div class="sp"></div>
         <button class="tag iconbtn cfg" aria-label="Configuración"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+      <div class="vitrina" id="vitA" aria-hidden="true"></div>
       <div class="menu">
         <button class="tag red modebtn" id="btnDia">Partida del día</button>
         <p class="note" id="diaNote"></p>
         <button class="tag modebtn" id="btnAv">Aventura</button>
         <p class="note" id="avNote"></p>
       </div>
-      <div class="vitrina" id="vitrina" aria-hidden="true"></div>
+      <div class="vitrina" id="vitB" aria-hidden="true"></div>
     </section>
     <!-- MAPA DE NIVELES (Aventura) -->
     <section id="map" class="screen off">
@@ -2183,11 +2185,12 @@ const HOME = (() => {
     enter(() => PROC.map());
   };
   $('#btnHome').onclick = () => show_();
-  // vidriera (solo adorno, no se toca): 2 estantes con 4 productos al azar cada uno; cambian cada vez que se vuelve al inicio
+  // vidriera (solo adorno, no reacciona al toque): un estante arriba y otro abajo de los botones, 4 productos al azar cada uno; cambian cada vez que se vuelve al inicio
   function vitrina() {
     const ts = Object.keys(NAMES).sort(() => Math.random() - .5).slice(0, 8);
     const it = t => `<div class="vi" data-t="${t}" style="--a:${ANIM[t] || 'bob'};--d:${(2.2 + Math.random() * 1.6).toFixed(2)}s;--l:${(-Math.random() * 3).toFixed(2)}s"><div class="bob"><img src="${SPR(t)}" alt=""></div></div>`;
-    $('#vitrina').innerHTML = [ts.slice(0, 4), ts.slice(4)].map(r => `<div class="vrow">${r.map(it).join('')}</div>`).join('');
+    $('#vitA').innerHTML = `<div class="vrow">${ts.slice(0, 4).map(it).join('')}</div>`;
+    $('#vitB').innerHTML = `<div class="vrow">${ts.slice(4).map(it).join('')}</div>`;
   }
   function show_() {
     vitrina();
