@@ -2044,7 +2044,72 @@ const DIA = (() => {
     return s;
   }
   let S = load(), cur = null, ready = null, enviado = false;
-  const store = () => { if (TEST) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+  const store = () => { if (TEST) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} if (REM) saver.save(snapshot()); };
+
+  /* Guardado en Página/12 (solo en la App: date + userId válidos). El navegador habla con api/game-state del juego
+     (función de Vercel en juego/api), que firma con el secreto y llama a la API de P12. Clave: fecha + gameId + userId.
+     Cada envío reemplaza todo el estado. Como Sumática (biblia P12, 2026-11-17): los errores de guardado nunca se le
+     muestran al jugador; reintenta solo a los 2, 5, 10, 20 s y después cada 30 s, siempre con la captura más nueva. */
+  const REM = APP.app && !TEST, SCHEMA = 1;
+  const snapshot = () => ({ schemaVersion: SCHEMA, partida_finalizada: !S.enCurso && terminadas().length > 0, fecha: S.fecha,
+    dia: S, extra: nextExtra(), result: !S.enCurso && mejor() ? contracts(mejor()) : null });
+  const saver = (() => {
+    const WAIT = [2000, 5000, 10000, 20000, 30000];
+    // last: la última captura que se mandó o se trajo. Solo se manda si la partida cambió: así una pestaña vieja
+    // que quedó abierta no pisa con su copia una partida que se siguió o se terminó en otro lado.
+    let pending = null, busy = false, tries = 0, timer = 0, last = '';
+    const changed = st => { const js = JSON.stringify(st); if (js === last) return false; last = js; return true; };
+    const body = st => JSON.stringify({ date: APP.fecha, userId: APP.userId, state: st });
+    async function flush() {
+      if (busy || !pending) return;
+      clearTimeout(timer);
+      const st = pending; pending = null; busy = true;
+      let ok = false;
+      try {
+        const r = await fetch('api/game-state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body(st), signal: AbortSignal.timeout(15000) });
+        const d = await r.json().catch(() => null); ok = r.ok && !!(d && d.saved);
+      } catch (e) {}
+      busy = false;
+      if (ok) { tries = 0; if (pending) flush(); return; }
+      pending = pending || st; tries++;                               // si llegó una captura más nueva, va esa
+      console.warn('[kiosco] No se pudo guardar en Página/12 (intento ' + tries + '); se reintenta solo.');
+      timer = setTimeout(flush, WAIT[Math.min(tries - 1, WAIT.length - 1)]);
+    }
+    const now = () => { clearTimeout(timer); flush(); };
+    if (REM) {
+      addEventListener('online', now);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) return now();
+        exit();                                                        // al ocultar o cerrar la pestaña
+      });
+      addEventListener('pagehide', () => exit());
+      setInterval(() => { if (S.enCurso) save(snapshot()); }, 15000);  // cada 15 s mientras hay una partida en curso
+    }
+    function save(st) { if (!changed(st)) return; pending = st; flush(); }
+    // al salir: se manda con keepalive y queda pendiente por si no llegó
+    function exit() { if (!S.jugadas.length) return; const st = snapshot(); if (!changed(st)) return; pending = st; try { fetch('api/game-state', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body(st), keepalive: true }); } catch (e) {} }
+    return { save, visto: st => { last = JSON.stringify(st); } };
+  })();
+  // al abrir en la App: trae la partida de esa fecha. Si hay, pisa la de este navegador; si no hay y acá hay una, la sube.
+  // Si no se puede leer (2 intentos), sigue con la de este navegador en silencio.
+  async function cargar() {
+    if (!REM) return;
+    for (const wait of [0, 2000]) {
+      if (wait) await new Promise(r => setTimeout(r, wait));
+      try {
+        const r = await fetch('api/game-state?' + new URLSearchParams({ date: APP.fecha, userId: APP.userId }), { cache: 'no-store', signal: AbortSignal.timeout(8000) });
+        const d = await r.json().catch(() => null);
+        if (!r.ok || !d || typeof d.found !== 'boolean') continue;
+        if (!d.found) { S = load(); if (S.jugadas.length) saver.save(snapshot()); return; }
+        const st = d.state;
+        if (!st || st.schemaVersion !== SCHEMA || !st.dia || st.dia.fecha !== APP.fecha || !Array.isArray(st.dia.jugadas)) { console.warn('[kiosco] Partida guardada incompatible; se usa la de este navegador.'); return; }
+        try { localStorage.setItem(KEY, JSON.stringify(st.dia)); if (st.extra >= 1 && st.extra <= EXTRAS) localStorage.setItem(XKEY, st.extra); } catch (e) {}
+        S = load(); cur = null; ready = null; saver.visto(snapshot());
+        return;
+      } catch (e) {}
+    }
+    console.warn('[kiosco] No se pudo leer la partida de Página/12; se usa la de este navegador.');
+  }
   // hoy: todos; días anteriores: solo Asociados; días futuros: nadie
   function acceso() { const f = fecha(), h = APP.hoy(); return f > h ? 'futuro' : f < h && !P12.asociado ? 'archivo' : 'ok'; }
   function left() {
@@ -2144,7 +2209,7 @@ const DIA = (() => {
   // debug: vuelve a habilitar las partidas de hoy
   function reset() { S = { fecha: fecha(), jugadas: [] }; cur = null; ready = null; enviado = false; store(); }
   function resetRecords() { try { localStorage.removeItem(RKEY); } catch (e) {} }
-  return { play, begin, started, done, guardar, stats, reenviar, endButtons, left, acceso, reset, resetRecords, records, medalHTML, verResultado, adapt,
+  return { play, begin, started, done, guardar, stats, reenviar, cargar, endButtons, left, acceso, reset, resetRecords, records, medalHTML, verResultado, adapt,
     jugadas: () => (S = load()).jugadas, get note() { return note; } };
 })();
 
@@ -2390,7 +2455,12 @@ const TUT = (() => {
   return { run, start, allow, after, cards, close: finish, largo, mechCards };
 })();
 
-if (TEST) { buildMap(); show('#map'); } else { HOME.show(); DIA.reenviar(); }
+if (TEST) { buildMap(); show('#map'); }
+else if (APP.app) {                                                 // en la App: primero se trae la partida guardada en Página/12
+  modal('<div class="body"><div class="stars"><span class="dots"><i></i><i></i><i></i></span></div></div>');
+  DIA.cargar().then(() => { $('#modal').classList.add('off'); HOME.show(); DIA.reenviar(); });
+}
+else { HOME.show(); DIA.reenviar(); }
 if (TEST) {
   modal(`<div class="sign"><h1>Prueba de dificultad</h1><div class="sub">Niveles ${TEST.from} a ${TEST.to}</div></div><div class="body">
     <p>Jugá los niveles en orden, como jugarías siempre.</p>
