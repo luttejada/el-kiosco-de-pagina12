@@ -290,9 +290,10 @@ button.tag:disabled{opacity:.5}
   #game>.bottom{grid-column:1;grid-row:5;flex-direction:column;justify-content:flex-end}
   #game>.bottom .tag{max-width:none;flex:none}
   #game>#board{grid-column:2;grid-row:1/-1;margin:6px 6px 6px 0}
-  /* el consejo va en la columna, centrado en el hueco entre los datos y los botones (placeTips) */
-  #game>.bottom>.side{position:static;margin:auto 0;flex:none}
-  #game>.bottom>.bubble.side{display:block;background:#fbf3dc;border:0;border-left:5px solid var(--red);border-radius:4px;box-shadow:none;padding:10px 12px 10px 14px}
+  /* el consejo va en la columna de los datos (placeTips lo pasa a .tips) */
+  #game>.tips{grid-column:1;grid-row:5;align-self:center}
+  #game>.tips>.side{position:static;margin:0;flex:none}
+  #game>.tips>.bubble.side{display:block;background:#fbf3dc;border:0;border-left:5px solid var(--red);border-radius:4px;box-shadow:none;padding:10px 12px 10px 14px}
   #home{display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:auto 1fr}
   #home>.top{grid-column:1/-1}
   #home .vitrina{padding:10px 10px 20px 24px}
@@ -422,24 +423,92 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
   #home .vitrina{padding-left:9%;padding-right:9%}
   #map .scroll{padding:0 8% 16px}
 }
-/* ---------- horizontal: sin marco estirado ---------- */
-@media (orientation: landscape) and (min-width: 600px) {
-  #app{background:radial-gradient(120% 100% at 60% 40%,#16224a,#0a1024);box-shadow:inset 0 0 0 6px var(--bermellon),inset 0 0 0 8px #c9a04a,0 0 40px rgba(0,0,0,.6)}
-  .wall{margin:8px}
-  #game>.hud .stat{min-height:54px;padding:4% 0 6%}
-  #game>.bottom .tag{min-height:44px;height:44px;font-size:15px}
-  #game>.bottom{padding-bottom:6px;gap:6px}
-}
 /* inicio: el cartel del nombre va centrado y Configuración a la derecha */
 #home>.top{position:relative;justify-content:center}
 #home>.top .cfg{position:absolute;right:6.4%;top:8px}
-@media (orientation: landscape) and (max-height: 480px) {
+
+/* =====================================================================
+   HORIZONTAL (compu, tablet y celular acostado): el kiosco visto de frente.
+   Columna izquierda: los contadores (como arriba en vertical) y el consejo.
+   Centro: la góndola en su vitrina. Columna derecha: los botones (como abajo en vertical).
+   A los costados, las tiras fileteadas del marco, sin estirar.
+   ===================================================================== */
+@media (orientation: landscape) and (min-width: 600px) {
+  :root{--orn:calc(100vh * .0326);--pw:clamp(168px,18vw,250px)}
+  #app{max-width:1440px;background:radial-gradient(90% 120% at 50% 45%,#16245a 0%,#0e1633 55%,#080d22 100%);box-shadow:0 0 40px rgba(0,0,0,.6)}
+  /* tiras del marco: el borde izquierdo y el derecho de marco.webp, en su proporción */
+  #app::before,#app::after{content:"";position:absolute;top:0;bottom:0;width:var(--orn);z-index:2;pointer-events:none;
+    background:url(skin/img/fondo/marco.webp) 0 0/auto 100% no-repeat}
+  #app::before{left:0}
+  #app::after{right:0;background-position:100% 0}
+  .wall{margin:0 calc(var(--orn) + 10px)}
+
+  /* ---------- juego ---------- */
+  #game{display:grid;grid-template-columns:var(--pw) minmax(0,1fr) var(--pw);grid-template-rows:auto 1fr auto auto auto auto 1fr;
+    column-gap:clamp(12px,2vw,28px);padding:8px 0 12px}
+  #game>.top{grid-column:1/-1;grid-row:1;position:relative;display:flex;justify-content:center;align-items:center;height:clamp(48px,10vh,76px);padding:0;
+    border-bottom:2px solid rgba(201,160,74,.55);margin-bottom:10px}
+  #game>.top .sp{flex:none;width:auto;height:100%;aspect-ratio:456/98}
+  #game>.top #btnMap{position:absolute;left:0;top:50%;transform:translateY(-50%)}
+  #game>.top #btnCfg{position:absolute;right:0;top:50%;transform:translateY(-50%)}
+  #game>.top #btnSkip{position:absolute;left:60px;top:50%;transform:translateY(-50%)}
+  /* contadores: Movimientos grande arriba; Nivel y Puntos abajo, lado a lado */
+  #game>.hud{grid-column:1;grid-row:3;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0;height:auto}
+  #game>.hud .stat{height:auto;min-height:0;aspect-ratio:196/111;padding:4% 0 7%}
+  #game>.hud .stat.moves{grid-column:1/-1;order:-1;aspect-ratio:236/111}
+  #game>.hud .stat .k{font-size:clamp(11px,1.05vw,14px)}
+  #game>.hud .stat .v{font-size:clamp(20px,2.3vw,32px)}
+  #game>.hud .stat.moves .v{font-size:clamp(26px,3vw,42px)}
+  #game>.bar{grid-column:1;grid-row:4;height:9px;margin:12px 6px 0}
+  #game>.order{grid-column:1;grid-row:5;margin:12px 0 0}
+  #game>.tips{grid-column:1;grid-row:6;margin-top:14px}
+  #game>.tips>.bubble.side,#game>.tips>.tutbox.side{font-size:15px;line-height:1.35}
+  /* la góndola, en su vitrina: azul noche con filete dorado */
+  #game::before{content:"";grid-column:2;grid-row:2/-1;border-radius:6px;
+    background:radial-gradient(100% 80% at 50% 40%,#15225a,#0b1330);box-shadow:inset 0 0 0 2px #c9a04a,inset 0 0 0 5px #0b1024,inset 0 0 0 6px rgba(201,160,74,.45),inset 0 10px 30px rgba(0,0,0,.55)}
+  #game>#board{grid-column:2;grid-row:2/-1;margin:clamp(10px,2vh,18px) clamp(10px,1.4vw,20px)}
+  /* botones: columna derecha, centrados, con el marco en su proporción */
+  #game>.bottom{grid-column:3;grid-row:2/-1;display:flex;flex-direction:column;justify-content:center;align-items:stretch;gap:12px;padding:0;height:auto}
+  #game>.bottom .tag{flex:none;width:100%;max-width:none;height:auto;min-height:0;aspect-ratio:524/180;font-size:clamp(15px,1.5vw,22px);padding:0 0 1%}
+
+  /* ---------- inicio ---------- */
+  #home{grid-template-columns:1.2fr 1fr;grid-template-rows:auto 1fr}
+  #home>.top{grid-column:1/-1;height:clamp(64px,17vh,130px);padding:12px 0 0}
+  #home>.top .sp{width:auto;height:100%}
+  #home>.top .cfg{right:0;top:12px}
+  #home .vitrina{margin:clamp(12px,3vh,28px) 0 clamp(16px,5vh,40px);padding:clamp(12px,3vh,30px) clamp(18px,3vw,40px);gap:clamp(14px,4vh,34px);border-radius:8px;
+    background:radial-gradient(100% 90% at 50% 40%,#15225a,#0b1330);box-shadow:inset 0 0 0 2px #c9a04a,inset 0 0 0 5px #0b1024,inset 0 0 0 6px rgba(201,160,74,.45),inset 0 10px 30px rgba(0,0,0,.55)}
+  #home .menu{justify-content:center;gap:14px;padding:0 clamp(16px,4vw,56px);max-width:460px;width:100%;justify-self:center}
+  #home .modebtn{min-height:clamp(60px,12vh,96px);font-size:clamp(20px,2.1vw,28px)}
+
+  /* ---------- mapa: una sola columna centrada ---------- */
+  #map>.top{padding:10px 0 4px}
+  #map>.top .sign{max-width:520px;margin:0 auto}
+  #mapScroll{display:block;width:100%;max-width:820px;margin:0 auto;padding:4px 12px 20px}
+}
+/* celular acostado: sin barra de arriba; el menú va arriba de los contadores y Configuración arriba de los botones */
+@media (orientation: landscape) and (min-width: 600px) and (max-height: 500px) {
+  :root{--pw:clamp(150px,20vw,200px)}
+  #game{grid-template-rows:auto 1fr auto auto auto auto 1fr;padding:6px 0 8px}
+  #game>.top{grid-column:1/-1;grid-row:1;height:0;border:0;margin:0;overflow:visible;z-index:5}
+  #game>.top .sp{display:none}
+  #game>.top #btnMap,#game>.top #btnCfg,#game>.top #btnSkip{top:0;transform:none}
+  #game>.top #btnCfg{right:0}
+  #game::before{grid-row:1/-1}
+  #game>#board{grid-row:1/-1;margin:8px}
+  #game>.hud{grid-row:3;margin-top:50px}
+  #game>.bottom{grid-row:1/-1;padding-top:44px;gap:8px}
+  #game>.hud .stat .v{font-size:20px}
+  #game>.hud .stat.moves .v{font-size:26px}
+  #game>.hud .stat .k{font-size:11px}
+  #game>.bar{margin-top:8px}
+  #game>.tips{margin-top:8px}
+  #game>.tips>.bubble.side,#game>.tips>.tutbox.side{font-size:13px;padding:6px 8px 6px 10px}
   #board .shutter{padding-top:46%}
   #board .shutter .tag{font-size:10px;line-height:1}
   #board .shutter .tag b{font-size:13px}
-  #game>.hud .stat{min-height:46px}
-  #game>.hud .stat .v{font-size:20px}
-  #game>.hud .stat .k{font-size:11px}
+  #home>.top{height:clamp(52px,15vh,80px);padding-top:8px}
+  #home .vitrina{margin:8px 0 12px}
 }
 </style>
 </head>
@@ -485,6 +554,7 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
       </div>
       <div class="bar" aria-hidden="true"><i id="hBar"></i></div>
       <div class="order" id="hOrder" hidden><span>Pedido</span><img id="hOrderImg" alt=""><b id="hOrderN">0/3</b></div>
+      <div class="tips"></div>
       <div id="board"></div>
       <div class="bottom">
         <button class="tag" id="btnRetry">
@@ -1572,13 +1642,13 @@ function hideTip() { if (tipEl) { tipEl.remove(); tipEl = null; } }
 const LAND = matchMedia('(orientation: landscape) and (min-width: 600px)');
 function placeTips() {
   if (!G) return;
-  const board = $('#board'), bot = $('#game>.bottom'), game = $('#game');
+  const board = $('#board'), side = $('#game>.tips'), game = $('#game');
   const els = [...document.querySelectorAll('#game .bubble, #game .tutbox')];
   const abajo = () => els.forEach(e => { e.classList.remove('side'); board.appendChild(e); });
   abajo();
   if (LAND.matches && els.length) {
-    els.forEach(e => { e.classList.add('side'); bot.prepend(e); });
-    const last = bot.lastElementChild, sobra = game.getBoundingClientRect().bottom - (last ? last.getBoundingClientRect().bottom : 0);
+    els.forEach(e => { e.classList.add('side'); side.appendChild(e); });
+    const last = side.lastElementChild, sobra = game.getBoundingClientRect().bottom - (last ? last.getBoundingClientRect().bottom : 0);
     if (game.scrollHeight > game.clientHeight + 1 || sobra < 8) abajo();
   }
   const h = Math.max(0, ...els.filter(e => e.parentNode === board).map(e => +(e.dataset.h || e.offsetHeight)));
