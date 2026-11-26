@@ -1084,7 +1084,7 @@ function elFor(it) {
     el.style.setProperty('--d', (2.2 + Math.random() * 1.6).toFixed(2) + 's');
     el.style.setProperty('--l', (-Math.random() * 3).toFixed(2) + 's');
     el.style.width = G.geo.vw + 'px'; el.style.height = G.geo.ih + 'px';
-    el.innerHTML = `<div class="bob"><img src="${it.w ? 'sprites/envuelto.svg' : SPR(it.t)}" alt="${it.w ? 'Producto envuelto en diario' : nameOf(it.t)}" draggable="false"></div>`;
+    el.innerHTML = `<div class="bob"><img src="${it.w ? 'sprites/envuelto.webp' : SPR(it.t)}" alt="${it.w ? 'Producto envuelto en diario' : nameOf(it.t)}" draggable="false"></div>`;
     if (it.w) el.classList.add('wrapped'); else el.dataset.t = it.t;
     el.it = it;
     $('#board').appendChild(el); els.set(it.id, el);
@@ -2356,7 +2356,7 @@ const TUT = (() => {
     ['Deshacer', `<div class="ico">${ICON.undo}Deshacer</div>`, 'Tocá Deshacer para volver atrás el último movimiento.'],
     ['Pista', `<div class="ico">${ICON.hint}Pista</div>`, 'Tocá Pista para ver un movimiento que sirve. Tenés 3 por nivel.'],
     ['Persiana', '<div class="mini"><div class="shutter"><span class="tag">FALTAN<b>2</b>VENTAS</span></div></div>', 'La persiana cierra un estante. Hacé las ventas que pide su cartel y se abre.'],
-    ['Envuelto', '<div class="swap"><img src="sprites/envuelto.svg" alt="Envuelto"><img src="sprites/mate.webp" alt="Mate"></div>', 'El envuelto es un producto tapado con diario. Se abre con una venta en su estante o en un estante pegado: arriba, abajo o al costado.'],
+    ['Envuelto', '<div class="swap"><img src="sprites/envuelto.webp" alt="Envuelto"><img src="sprites/mate.webp" alt="Mate"></div>', 'El envuelto es un producto tapado con diario. Se abre con una venta en su estante o en un estante pegado: arriba, abajo o al costado.'],
     ['Rotativa', `<div class="belt"><div class="beltbar"></div><div class="carts"><div class="cartp">${img('mate')}</div><div class="cartp">${img('alfajor')}</div><div class="cartp">${img('sifon')}</div></div></div>`, 'Los pliegos de la rotativa funcionan como estantes, aunque se vean cortados. Esperar no gasta movimientos.'],
     ['Caja', img('caja'), 'La caja ocupa un lugar y no se mueve. Se abre con una venta en su estante o en un estante pegado.'],
     ['Caramelo', img('mate') + img('mate') + img('caramelo'), 'El caramelo completa cualquier venta: juntalo con 2 productos iguales.'],
