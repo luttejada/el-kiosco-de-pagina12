@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>El kiosco de Página/12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Oswald:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Oswald:wght@500;600;700&family=Playfair+Display:wght@800;900&display=swap">
 <style>
 :root{
   --red:#c2272d; --red-d:#7d1519; --cream:#f4e8c8; --cream-d:#e2d0a4; --ink:#3a2313;
@@ -312,6 +312,134 @@ button.tag:disabled{opacity:.5}
   .tapa h2{font-size:24px}
   #home .vitrina{gap:14px}
   .modebtn{min-height:64px;font-size:20px}
+}
+</style>
+<style id="skin">/* =====================================================================
+   SKIN «Fileteado porteño · cubículos claros» (propuesta 6 aprobada, 26/11/2026)
+   build.js la mete en index.html después del <style> del juego. Piezas en juego/skin/img (WebP;
+   las PNG originales están en la carpeta ARTE de la copia estable 2026-11-25).
+   Solo pisa lo visual. En vertical las piezas caen sobre el marco (alturas en % de la pantalla);
+   en horizontal el marco no se estira: fondo azul noche con borde bermellón.
+   ===================================================================== */
+:root{--gold-txt:linear-gradient(180deg,#fff7cf 0%,#ffe08a 38%,#e9a93a 62%,#b36a1c 100%);--fink:#2a1206;--navy:#0f1a3a;--bermellon:#a3121a}
+html,body{background:#05070f}
+#app{background:#0e1633 url(skin/img/fondo/marco.webp) 0 0/100% 100% no-repeat;box-shadow:0 0 40px rgba(0,0,0,.6)}
+.wall{margin:0;border-radius:0;background:none;box-shadow:none}
+/* texto dorado con contorno */
+#game>.hud .stat .v,.lvl b,.float,.sect{background:var(--gold-txt);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 .6px var(--fink)) drop-shadow(0 0 .6px var(--fink)) drop-shadow(0 2px 0 var(--fink));text-shadow:none}
+
+/* botones: azul noche con borde dorado; el principal, bermellón */
+button.tag{background:var(--navy);border:2px solid #c9a04a;color:#f6e7c4;box-shadow:0 2px 0 rgba(0,0,0,.5)}
+button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
+/* botones de arriba: marco fileteado */
+.iconbtn{width:48px!important;height:44px!important;border:0!important;border-radius:0;box-shadow:none!important;
+  background:url(skin/img/hud/boton-icono-vacio.webp) 0 0/100% 100% no-repeat!important;color:#f6e2b4}
+#btnMap{background-image:url(skin/img/hud/boton-menu.webp)!important}
+#btnMap .icon{opacity:0}
+.iconbtn .icon{width:46%;height:46%}
+/* cartel con el nombre del juego (la imagen ya tiene el texto) en el hueco del medio de la barra de arriba */
+#game>.top .sp,#home>.top .sp{flex:none;width:60%;aspect-ratio:456/98;background:url(skin/img/hud/cartel-titulo.webp) 0 0/100% 100% no-repeat}
+/* carteles con texto (Aventura, títulos de las tarjetas): bermellón con letras doradas */
+.sign{background:var(--bermellon);box-shadow:inset 0 0 0 2px #c9a04a,inset 0 2px 6px rgba(0,0,0,.45)}
+.sign h1{color:#ffe08a;text-shadow:0 2px 0 var(--fink)}
+
+/* contadores */
+#game>.hud .stat{border:0;border-radius:0;box-shadow:none;background:url(skin/img/hud/contador-nivel.webp) 0 0/100% 100% no-repeat;padding:6% 0 8%}
+#game>.hud .stat.moves{background-image:url(skin/img/hud/contador-movimientos.webp)}
+#game>.hud .stat:last-child{background-image:url(skin/img/hud/contador-puntos.webp)}
+#game>.hud .stat .k{font-family:'Playfair Display',Georgia,serif;font-weight:800;font-size:clamp(11px,3vw,13px);letter-spacing:.2px;text-transform:uppercase;color:#f6e7c4;
+  text-shadow:0 1px 0 var(--fink),0 0 1px var(--fink)}
+#game>.hud .stat .v{font-family:'Alfa Slab One',Georgia,serif;font-size:clamp(20px,6.4vw,28px);line-height:1}
+#game>.hud .stat.moves.low .v,#game>.hud .stat.moves.zero .v{background:linear-gradient(#ffd3c4,#ff6a4a 50%,#b3150c);-webkit-background-clip:text;background-clip:text}
+.bar{background:#0b1024;box-shadow:inset 0 0 0 1.5px #c9a04a;border-radius:99px}
+.bar i{background:linear-gradient(#f8ecc8,#e5cf9a)}
+.order{background:rgba(10,16,38,.9);box-shadow:inset 0 0 0 1.5px #c9a04a;color:#f6e7c4}
+.order b{color:#ffe08a}
+.order.done{background:#1d4a2a}
+
+/* góndola: cubículos de madera con la pared clara (colores en el orden de la propuesta) */
+.shelf{border-radius:0;box-shadow:none;background:url(skin/img/gondola/cubiculo-crema.webp) 0 0/100% 100% no-repeat}
+.shelf[data-i="1"],.shelf[data-i="9"],.shelf[data-i="10"],.shelf[data-i="11"]{background-image:url(skin/img/gondola/cubiculo-rosa.webp)}
+.shelf[data-i="3"]{background-image:url(skin/img/gondola/cubiculo-malva.webp)}
+.shelf[data-i="6"]{background-image:url(skin/img/gondola/cubiculo-gris.webp)}
+.shelf[data-i="7"],.shelf[data-i="12"],.shelf[data-i="13"],.shelf[data-i="14"]{background-image:url(skin/img/gondola/cubiculo-celeste.webp)}
+.shelf[data-i="8"]{background-image:url(skin/img/gondola/cubiculo-verde.webp)}
+.shelf .plank{background:none;border:0;box-shadow:none}
+.shelf .plank::after{display:none}
+.shelf.target{box-shadow:0 0 0 3px #ffd75a,0 0 14px rgba(255,215,90,.5)}
+@keyframes glow{0%,100%{box-shadow:0 0 0 3px rgba(255,215,90,.2)}50%{box-shadow:0 0 0 3px #ffd75a,0 0 14px rgba(255,215,90,.5)}}
+/* persiana: cartel rojo «CERRADO»; el juego escribe cuántas ventas faltan debajo */
+#board .shutter{left:0;right:0;top:0;bottom:0;border:0;border-radius:0;box-shadow:none;
+  background:url(skin/img/gondola/persiana.webp) 0 0/100% 100% no-repeat;align-items:flex-start;padding-top:52%}
+#board .shutter .tag{background:none;border:0;box-shadow:none;min-height:0;padding:0;color:#f6e7c4;
+  font-family:'Playfair Display',Georgia,serif;font-weight:800;font-size:clamp(10px,2.6vw,12px);letter-spacing:.3px;line-height:1.05;text-shadow:0 1px 0 var(--fink),0 0 1px var(--fink)}
+#board .shutter .tag b{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(14px,4.2vw,18px);color:#ffe08a}
+/* rotativa: cinta de madera con filete dorado; los pliegos usan el cubículo celeste */
+#board .beltbar{background:linear-gradient(#3b2614,#2a1a0c);border-top:3px solid #c9a04a;border-bottom:3px solid #7a5522;border-radius:0}
+#board .shelf.cart{background:url(skin/img/gondola/cubiculo-celeste.webp) 0 0/100% 100% no-repeat;border:0}
+#board .shelf.cart .plank{background:none;border:0}
+/* el cartel «Rotativa» solo informa: texto dorado, sin forma de botón */
+#board .beltlabel{background:none;border:0;box-shadow:none;color:#ffe08a;font-size:12px;text-shadow:0 1px 0 var(--fink),0 0 2px var(--fink)}
+
+/* botones de abajo: marcos fileteados, el texto lo pone el juego en dorado */
+#game>.bottom .tag{border:0;border-radius:0;box-shadow:none;background:url(skin/img/hud/boton-reiniciar.webp) 0 0/100% 100% no-repeat;
+  color:#f7cf6b;font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(13px,3.7vw,16px);letter-spacing:0;white-space:nowrap;min-height:46px;
+  text-shadow:0 1px 0 #b0601c,1px 1px 0 #3a1606,-1px 1px 0 #3a1606,1px -1px 0 #3a1606,-1px -1px 0 #3a1606,0 2px 0 #3a1606}
+#game>.bottom .tag.red{background-image:url(skin/img/hud/boton-pista.webp)}
+#game>.bottom .tag .icon{display:none}
+#game>.bottom .tag span{margin-left:.25em}
+
+/* consejos: papel claro con filete rojo (se leen sobre el azul) */
+#game .bubble{background:#fbf3dc;border:0;border-left:5px solid var(--bermellon);border-radius:4px;color:var(--ink)}
+
+/* mapa de niveles e inicio */
+.intro{background:rgba(10,16,38,.92);border:2px solid #c9a04a;color:#f6e7c4;border-radius:10px}
+.note{color:#f6e7c4}
+.row::after,.vrow::after{background:linear-gradient(#5a3a1c,#3b2614);border-bottom:3px solid #1d1006}
+.lvl{background:var(--navy);border:2px solid #e9b53c;border-radius:8px;color:#f6e7c4}
+.lvl.cur{background:var(--bermellon);border-color:#ffd75a}
+.lvl.lock{filter:grayscale(.7) brightness(.6)}
+
+/* tarjetas: papel claro con marco dorado; la tapa del diario sigue siendo de papel */
+#modal{background:rgba(5,8,20,.6)}
+.card{border:3px solid #c9a04a}
+.card .sign{box-shadow:inset 0 -2px 0 #c9a04a}
+.tapa{border:3px solid #c9a04a}
+.tapa .redline{background:var(--bermellon)}
+
+/* ---------- vertical: las piezas caen sobre el marco ---------- */
+@media (orientation: portrait), (max-width: 599px) {
+  #game>.top{flex:none;height:7.4%;padding:1.3% 6.4% 0 6.6%;gap:0;align-items:flex-start;justify-content:space-between}
+  #game>.hud{flex:none;height:8.2%;padding:0 6.6% 0 6.9%;gap:1.6%;grid-template-columns:196fr 236fr 196fr}
+  #game>.hud .stat{min-height:0;height:100%}
+  #game>.bar{flex:none;height:1.1%;min-height:7px;margin:.6% 7.6% auto 8%}
+  #game>.order{flex:none;margin:1% 9% 0}
+  #board{flex:none;height:67.2%;margin:0 5.4% 0 6.3%}
+  #game>.bottom{flex:none;height:10.4%;padding:0 7% .8%;align-items:flex-end;gap:1.5%}
+  #game>.bottom .tag{flex:1 1 0;max-width:none;padding:0 4px;height:min(78%,52px)}
+  #home>.top,#map>.top{padding-left:6.6%;padding-right:6.4%}
+  #home .vitrina{padding-left:9%;padding-right:9%}
+  #map .scroll{padding:0 8% 16px}
+}
+/* ---------- horizontal: sin marco estirado ---------- */
+@media (orientation: landscape) and (min-width: 600px) {
+  #app{background:radial-gradient(120% 100% at 60% 40%,#16224a,#0a1024);box-shadow:inset 0 0 0 6px var(--bermellon),inset 0 0 0 8px #c9a04a,0 0 40px rgba(0,0,0,.6)}
+  .wall{margin:8px}
+  #game>.hud .stat{min-height:54px;padding:4% 0 6%}
+  #game>.bottom .tag{min-height:44px;height:44px;font-size:15px}
+  #game>.bottom{padding-bottom:6px;gap:6px}
+}
+/* inicio: el cartel del nombre va centrado y Configuración a la derecha */
+#home>.top{position:relative;justify-content:center}
+#home>.top .cfg{position:absolute;right:6.4%;top:8px}
+@media (orientation: landscape) and (max-height: 480px) {
+  #board .shutter{padding-top:46%}
+  #board .shutter .tag{font-size:10px;line-height:1}
+  #board .shutter .tag b{font-size:13px}
+  #game>.hud .stat{min-height:46px}
+  #game>.hud .stat .v{font-size:20px}
+  #game>.hud .stat .k{font-size:11px}
 }
 </style>
 </head>
@@ -627,7 +755,7 @@ const TIPS = {
   2:'Los productos oscuros están atrás. Vaciá el frente del estante y pasan adelante.',
   3:'Usá pocos movimientos para ganar más estrellas.',
   16:'Hacé las ventas que pide el cartel de la persiana y se abre.',
-  31:'Los pliegos de la rotativa funcionan como estantes. Solo podés usar los que se ven enteros.',
+  31:'Los pliegos de la rotativa funcionan como estantes, aunque se vean cortados.',
   35:'Un envuelto se abre con una venta en su estante o en un estante pegado.'
 };
 const NEW = {1:'Para arrancar', 2:'Nuevo: productos de atrás', 3:'Estrellas', 16:'Nuevo: persiana', 31:'Nuevo: rotativa', 35:'Nuevo: envueltos'};
@@ -936,7 +1064,23 @@ function tick(t) {
   const dt = Math.min(.05, (t - lastT) / 1000); lastT = t;
   if (!G || !G.nb || !G.geo || $('#game').classList.contains('off')) return;
   const g = G.geo;
-  G.off = (G.off + 20 * dt) % g.loop;
+  // si todos los pliegos que se ven están vacíos y hay productos en otro, la cinta se corre de una vez
+  // hasta que el próximo pliego con productos entra entero por la izquierda (no mientras el jugador tiene un producto agarrado)
+  if (G.jump) {
+    const k = Math.min(1, (t - G.jump.t0) / 450), e = 1 - Math.pow(1 - k, 3);
+    G.off = G.jump.from + (G.jump.to - G.jump.from) * e;
+    if (k >= 1) { G.off %= g.loop; G.jump = null; }
+  } else {
+    const lleno = i => G.sh[i].f.some(Boolean) || G.sh[i].b.some(r => r.some(Boolean));
+    let vistos = false, d = Infinity;
+    for (let i = G.nReg; i < G.sh.length; i++) {
+      if (!lleno(i)) continue;
+      if (cartVisible(i)) { vistos = true; break; }
+      d = Math.min(d, ((8 - shelfRect(i).x) % g.loop + g.loop) % g.loop);
+    }
+    if (!vistos && d < Infinity && !(drag && drag.moved) && !G.sel) G.jump = { from: G.off, to: G.off + d, t0: t };
+    else G.off = (G.off + 20 * dt) % g.loop;
+  }
   $('#beltbar').style.backgroundPositionX = G.off + 'px';
   for (let i = G.nReg; i < G.sh.length; i++) {
     const r = shelfRect(i), d = G.shelfEls[i];
@@ -957,7 +1101,8 @@ function tick(t) {
   }
 }
 requestAnimationFrame(tick);
-function cartVisible(i) { const r = shelfRect(i); return r.x > -r.w * .2 && r.x + r.w < G.geo.W + r.w * .2; }
+// un pliego se puede usar apenas asoma: alcanza con que se vea 1 px
+function cartVisible(i) { const r = shelfRect(i); return r.x + r.w > 1 && r.x < G.geo.W - 1; }
 function render(instant) {
   G.sh.forEach((x, i) => {
     x.f.forEach((it, s) => it && place(it, i, s, 0, instant));
@@ -2067,7 +2212,7 @@ const TUT = (() => {
     ['Pista', `<div class="ico">${ICON.hint}Pista</div>`, 'Tocá Pista para ver un movimiento que sirve. Tenés 3 por nivel.'],
     ['Persiana', '<div class="mini"><div class="shutter"><span class="tag">FALTAN<b>2</b>VENTAS</span></div></div>', 'La persiana cierra un estante. Hacé las ventas que pide su cartel y se abre.'],
     ['Envuelto', '<div class="swap"><img src="sprites/envuelto.svg" alt="Envuelto"><img src="sprites/mate.webp" alt="Mate"></div>', 'El envuelto es un producto tapado con diario. Se abre con una venta en su estante o en un estante pegado: arriba, abajo o al costado.'],
-    ['Rotativa', `<div class="belt"><div class="beltbar"></div><div class="carts"><div class="cartp">${img('mate')}</div><div class="cartp">${img('alfajor')}</div><div class="cartp">${img('sifon')}</div></div></div>`, 'Los pliegos de la rotativa funcionan como estantes. Solo podés usar los que se ven enteros. Esperar no gasta movimientos.'],
+    ['Rotativa', `<div class="belt"><div class="beltbar"></div><div class="carts"><div class="cartp">${img('mate')}</div><div class="cartp">${img('alfajor')}</div><div class="cartp">${img('sifon')}</div></div></div>`, 'Los pliegos de la rotativa funcionan como estantes, aunque se vean cortados. Esperar no gasta movimientos.'],
     ['Caja', img('caja'), 'La caja ocupa un lugar y no se mueve. Se abre con una venta en su estante o en un estante pegado.'],
     ['Caramelo', img('mate') + img('mate') + img('caramelo'), 'El caramelo completa cualquier venta: juntalo con 2 productos iguales.'],
     ['Pedido', `<div class="order"><span>Pedido</span>${img('mate')}<b>0/3</b></div>`, 'Si el nivel tiene pedido, ganás cuando hacés las ventas del pedido.']
