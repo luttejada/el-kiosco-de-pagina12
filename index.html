@@ -1897,8 +1897,8 @@ PROC = (() => {
   // No mira el dispositivo ni el modelo del jugador. Si se cambia algo de acá, cambiar DIA_VER (los días ya jugados cambiarían).
   const DIA_VER = 'v1';
   // extra (1 a 50): las partidas que siguen para Asociados; dependen solo del número, así son las mismas para todos y todos los días
-  async function makeFija(fecha, nx) {
-    let h = 2166136261; const key = nx ? `kiosco-extra-${DIA_VER}|${nx}` : `kiosco-dia-${DIA_VER}|${fecha}`;
+  async function makeFija(fecha) {
+    let h = 2166136261; const key = `kiosco-dia-${DIA_VER}|${fecha}`;
     for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
     let s = h >>> 0;
     const r = () => { s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
@@ -1910,7 +1910,7 @@ PROC = (() => {
     if (!g) { q = base([], seed + 2, 0); g = await gen(q); }
     const front = [...new Set(g.sh.flatMap(x => x.f).filter(t => t && HEADS[t]))].sort(), t = front[(r() * front.length) | 0] || 'diario';
     const extra = Math.ceil((q.wraps || 0) / 2) + (q.belt ? 1 : 0), used = q.locks.length || q.wraps || q.belt || q.boxes || q.wild || q.goal ? [mech] : [];
-    return { n: 1, fecha, extra: nx || 0, ver: DIA_VER, cols: q.cols, rows: q.rows, par: g.par, s3: s3For(g.par) + extra, s2: s2For(g.par) + extra, moves: s2For(g.par) + 3 + extra,
+    return { n: 1, fecha, ver: DIA_VER, cols: q.cols, rows: q.rows, par: g.par, s3: s3For(g.par) + extra, s2: s2For(g.par) + extra, moves: s2For(g.par) + 3 + extra,
       pts: 100 + 30 * used.length, shelves: g.sh, wrap: g.wrap, belt: g.belt, goal: g.goal, D: d, mechs: used, title: HEADS[t][(r() * 2) | 0], volanta: 'Partida del día',
       tip: used.filter(m => !P.vistas[m]).map(m => MECH[m].tip).join(' ') || null };
   }
@@ -2017,8 +2017,8 @@ PROC = (() => {
 
 /* ---------- Partida del día ----------
    Fija (la de Página/12, desde el 25/11/2026): la misma góndola para todos ese día, armada solo con la fecha (PROC.makeFija).
-   No Asociados: 1 partida por día. Asociados: la primera del día es esa; después siguen las 50 «extra» (las mismas para todos),
-   en orden y sin límite. El orden sigue de un día al otro (kiosco-extra) y después de la 50 vuelve a la 1. A la App va su mejor partida.
+   No Asociados: 1 partida por día. Asociados: rejuegan esa misma góndola todas las veces que quieran (Jugar de nuevo).
+   A la App va su mejor partida. (Del 26/11/2026 hasta este cambio los Asociados seguían con 50 góndolas «extra»; se sacó.)
    Se guarda en este navegador después de cada movimiento: si se sale a la mitad, al volver sigue donde quedó.
    Medalla (solo en este modo): bronce por jugar (perder o ganar con 1 estrella), plata ganando con 2, oro ganando con 3.
    La guía de P12 pide que toda partida terminada dé al menos bronce: si no se manda nada, la App no la registra.
@@ -2031,20 +2031,23 @@ const MEDAL_SVG = m => { const c = { gold: ['#f2b632', '#8f5527'], silver: ['#d5
     <circle cx="24" cy="31" r="13" fill="${c[0]}" stroke="${c[1]}" stroke-width="2"/><circle cx="24" cy="31" r="8.5" fill="none" stroke="${c[1]}" stroke-width="1.4" opacity=".55"/></svg>`; };
 const DIA = (() => {
   const U = APP.userId ? ':' + APP.userId : '';                     // en la App, cada usuario guarda lo suyo
-  const KEY = 'kiosco-dia' + U, RKEY = 'kiosco-record' + U, XKEY = 'kiosco-extra' + U, EXTRAS = 50;
-  // próxima partida extra (1 a 50) de este Asociado
-  const nextExtra = () => { let n = 1; try { n = +localStorage.getItem(XKEY) || 1; } catch (e) {} return n >= 1 && n <= EXTRAS ? n : 1; };
+  const KEY = 'kiosco-dia' + U, RKEY = 'kiosco-record' + U;
   const BONUS = { bronze: 0, silver: 5000, gold: 10000 }, METAL = { bronze: 'Bronce', silver: 'Plata', gold: 'Oro' };
   const adapt = () => { try { return P12.prueba && localStorage.getItem('kiosco-dia-adapt') === '1'; } catch (e) { return false; } };
   const fecha = () => APP.app ? APP.fecha : APP.hoy();
+  // copia en memoria: si el navegador no deja usar localStorage (iframe con el almacenamiento de terceros bloqueado),
+  // la partida del día sigue entera mientras la página esté abierta
+  const MEMO = {};
+  const leer = k => { if (k in MEMO) return MEMO[k]; try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const escribir = (k, v) => { MEMO[k] = v; if (!TEST) try { localStorage.setItem(k, v); } catch (e) {} };
   function load() {
-    let s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+    let s = {}; try { s = JSON.parse(leer(KEY) || '{}'); } catch (e) {}
     if (s.fecha !== fecha()) s = { fecha: fecha(), jugadas: [] };   // un día nuevo empieza de cero
     s.jugadas.forEach(j => { if (j.estado === 'jugando' && !s.enCurso) Object.assign(j, { estado: 'perdió', medal: 'bronze', puntos: j.puntos || 0, movimientos: j.movimientos || 0 }); });
     return s;
   }
   let S = load(), cur = null, ready = null, enviado = false;
-  const store = () => { if (TEST) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} if (REM) saver.save(snapshot()); };
+  const store = () => { escribir(KEY, JSON.stringify(S)); if (REM) saver.save(snapshot()); };
 
   /* Guardado en Página/12 (solo en la App: date + userId válidos). El navegador habla con api/game-state del juego
      (función de Vercel en juego/api), que firma con el secreto y llama a la API de P12. Clave: fecha + gameId + userId.
@@ -2052,7 +2055,7 @@ const DIA = (() => {
      muestran al jugador; reintenta solo a los 2, 5, 10, 20 s y después cada 30 s, siempre con la captura más nueva. */
   const REM = APP.app && !TEST, SCHEMA = 1;
   const snapshot = () => ({ schemaVersion: SCHEMA, partida_finalizada: !S.enCurso && terminadas().length > 0, fecha: S.fecha,
-    dia: S, extra: nextExtra(), result: !S.enCurso && mejor() ? contracts(mejor()) : null });
+    dia: S, result: !S.enCurso && mejor() ? contracts(mejor()) : null });
   const saver = (() => {
     const WAIT = [2000, 5000, 10000, 20000, 30000];
     // last: la última captura que se mandó o se trajo. Solo se manda si la partida cambió: así una pestaña vieja
@@ -2103,7 +2106,7 @@ const DIA = (() => {
         if (!d.found) { S = load(); if (S.jugadas.length) saver.save(snapshot()); return; }
         const st = d.state;
         if (!st || st.schemaVersion !== SCHEMA || !st.dia || st.dia.fecha !== APP.fecha || !Array.isArray(st.dia.jugadas)) { console.warn('[kiosco] Partida guardada incompatible; se usa la de este navegador.'); return; }
-        try { localStorage.setItem(KEY, JSON.stringify(st.dia)); if (st.extra >= 1 && st.extra <= EXTRAS) localStorage.setItem(XKEY, st.extra); } catch (e) {}
+        escribir(KEY, JSON.stringify(st.dia));
         S = load(); cur = null; ready = null; saver.visto(snapshot());
         return;
       } catch (e) {}
@@ -2124,7 +2127,7 @@ const DIA = (() => {
   const contracts = j => ({ medal: j.medal, score: valor(j), points: j.puntos, moves: j.movimientos });
   // Mejores puntajes (puntos sin bonus): del día y de siempre
   function records() {
-    let r = {}; try { r = JSON.parse(localStorage.getItem(RKEY) || '{}'); } catch (e) {}
+    let r = {}; try { r = JSON.parse(leer(RKEY) || '{}'); } catch (e) {}
     if (!r.dia || r.dia.fecha !== fecha()) r.dia = { fecha: fecha(), puntos: 0 };
     if (!r.siempre) r.siempre = { fecha: null, puntos: 0 };
     return r;
@@ -2136,7 +2139,7 @@ const DIA = (() => {
     const nuevo = pts > r.siempre.puntos;
     if (nuevo) r.siempre = { fecha: fecha(), puntos: pts };
     note = nuevo ? '<p class="rec">¡Récord nuevo!</p>' : r.siempre.puntos ? `<p>Tu mejor puntaje: ${r.siempre.puntos}</p>` : '';
-    if (!TEST) try { localStorage.setItem(RKEY, JSON.stringify(r)); } catch (e) {}
+    escribir(RKEY, JSON.stringify(r));
     return r;
   }
   const loading = k => modal(`<div class="sign"><h1>Partida ${k + 1}</h1></div><div class="body"><div class="stars"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
@@ -2151,19 +2154,14 @@ const DIA = (() => {
     const k = S.jugadas.length;
     let L;
     if (adapt()) { if (!ready || ready.k !== k) { loading(k); ready = { k, L: await PROC.makeDia(k + 1) }; } L = ready.L; }
-    else if (k > 0 && P12.asociado) {                              // Asociados, después de la primera: la próxima de las 50
-      const e = nextExtra();
-      if (!ready || ready.e !== e) { loading(k); ready = { e, L: await PROC.makeFija(S.fecha, e) }; }
-      L = Object.assign({}, ready.L, { n: k + 1 });
-    }
-    else { if (!S.L || S.L.fecha !== S.fecha) { loading(k); S.L = await PROC.makeFija(S.fecha); store(); } L = Object.assign({}, S.L, { n: k + 1 }); }
+    else { if (!S.L || S.L.fecha !== S.fecha) {                // la de todos; los Asociados la rejuegan igual
+      loading(k); S.L = await PROC.makeFija(S.fecha); store(); } L = Object.assign({}, S.L, { n: k + 1 }); }
     cur = { k, started: false };
     startLevel(k + 1, false, L, 'dia');
   }
   function begin() {
     if (!cur || cur.started) return;
     cur.started = true; ready = null;
-    if (G.L.extra && !TEST) try { localStorage.setItem(XKEY, G.L.extra % EXTRAS + 1); } catch (e) {}
     S.jugadas.push({ dificultad: G.L.D, estado: 'jugando' });
     S.enCurso = { k: cur.k, L: G.L, snap: null, hints: G.hints }; store();
   }
@@ -2192,8 +2190,8 @@ const DIA = (() => {
   const medalHTML = (m, hidden) => `<div class="medalbox${hidden ? '' : ' on'}" id="rMedal"${hidden ? ' style="visibility:hidden"' : ''}>${MEDAL_SVG(m)}<b>${METAL[m]}</b></div>`;
   function endButtons() {
     const otra = P12.asociado && acceso() === 'ok';
-    if (APP.enIframe) return '<button class="tag" data-a="home">Inicio</button>' + (otra ? '<button class="tag" data-a="nextdia">Otra partida</button>' : '') + '<button class="tag red" data-a="stats">Ver estadísticas</button>';
-    return '<button class="tag" data-a="home">Inicio</button>' + (otra ? '<button class="tag red" data-a="nextdia">Otra partida</button>' : '');
+    if (APP.enIframe) return '<button class="tag" data-a="home">Inicio</button>' + (otra ? '<button class="tag" data-a="nextdia">Jugar de nuevo</button>' : '') + '<button class="tag red" data-a="stats">Ver estadísticas</button>';
+    return '<button class="tag" data-a="home">Inicio</button>' + (otra ? '<button class="tag red" data-a="nextdia">Jugar de nuevo</button>' : '');
   }
   // la partida de hoy ya se jugó (no Asociado): se ve su resultado
   function verResultado() {
@@ -2208,7 +2206,7 @@ const DIA = (() => {
   }
   // debug: vuelve a habilitar las partidas de hoy
   function reset() { S = { fecha: fecha(), jugadas: [] }; cur = null; ready = null; enviado = false; store(); }
-  function resetRecords() { try { localStorage.removeItem(RKEY); } catch (e) {} }
+  function resetRecords() { delete MEMO[RKEY]; try { localStorage.removeItem(RKEY); } catch (e) {} }
   return { play, begin, started, done, guardar, stats, reenviar, cargar, endButtons, left, acceso, reset, resetRecords, records, medalHTML, verResultado, adapt,
     jugadas: () => (S = load()).jugadas, get note() { return note; } };
 })();
