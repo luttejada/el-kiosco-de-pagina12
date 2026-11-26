@@ -1,0 +1,6 @@
+{
+  "gameId": "p12kiosco",
+  "appOrigin": "https://keen-alfajores-9c13b3.netlify.app",
+  "apiBaseUrl": "https://paneljuegos.vercel.app/api",
+  "debug": { "showUrlParameters": false }
+}
