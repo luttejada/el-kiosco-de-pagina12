@@ -4,7 +4,7 @@
   "buildCommand": null,
   "installCommand": null,
   "outputDirectory": ".",
-  "git": { "deploymentEnabled": { "main": true, "*": false } },
+  "git": { "deploymentEnabled": false },
   "headers": [
     {
       "source": "/(.*)",
