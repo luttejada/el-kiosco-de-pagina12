@@ -2020,8 +2020,9 @@ PROC = (() => {
    No Asociados: 1 partida por día. Asociados: la primera del día es esa; después siguen las 50 «extra» (las mismas para todos),
    en orden y sin límite. El orden sigue de un día al otro (kiosco-extra) y después de la 50 vuelve a la 1. A la App va su mejor partida.
    Se guarda en este navegador después de cada movimiento: si se sale a la mitad, al volver sigue donde quedó.
-   Medalla (solo en este modo): bronce ganando con 1 estrella, plata con 2, oro con 3. Perder no da medalla y no se manda nada a la App
-   (la guía de P12 no acepta mandar una partida sin medalla). A la App va la mejor partida ganada del día,
+   Medalla (solo en este modo): bronce por jugar (perder o ganar con 1 estrella), plata ganando con 2, oro ganando con 3.
+   La guía de P12 pide que toda partida terminada dé al menos bronce: si no se manda nada, la App no la registra.
+   A la App va la mejor partida del día,
    con score = puntos + bonus de medalla (plata +5000, oro +10000): así los umbrales del Panel (0 / 5000 / 10000)
    dan la misma medalla que el juego. Los puntos de una partida no llegan a 5000.
    Debug: "Partida del día: adaptativa" usa el algoritmo de Aventura (PROC.makeDia), como antes del 25/11/2026. */
@@ -2039,7 +2040,7 @@ const DIA = (() => {
   function load() {
     let s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
     if (s.fecha !== fecha()) s = { fecha: fecha(), jugadas: [] };   // un día nuevo empieza de cero
-    s.jugadas.forEach(j => { if (j.estado === 'jugando' && !s.enCurso) Object.assign(j, { estado: 'perdió', medal: null, puntos: j.puntos || 0, movimientos: j.movimientos || 0 }); });
+    s.jugadas.forEach(j => { if (j.estado === 'jugando' && !s.enCurso) Object.assign(j, { estado: 'perdió', medal: 'bronze', puntos: j.puntos || 0, movimientos: j.movimientos || 0 }); });
     return s;
   }
   let S = load(), cur = null, ready = null, enviado = false;
@@ -2052,9 +2053,9 @@ const DIA = (() => {
     if (P12.asociado) return Infinity;
     return S.enCurso ? 1 : Math.max(0, 1 - S.jugadas.length);
   }
-  const ganadas = () => S.jugadas.filter(j => j.medal);            // solo las ganadas tienen medalla
+  const terminadas = () => S.jugadas.filter(j => j.medal);
   const valor = j => j.puntos + BONUS[j.medal];
-  const mejor = () => ganadas().reduce((a, j) => !a || valor(j) > valor(a) ? j : a, null);
+  const mejor = () => terminadas().reduce((a, j) => !a || valor(j) > valor(a) ? j : a, null);
   const contracts = j => ({ medal: j.medal, score: valor(j), points: j.puntos, moves: j.movimientos });
   // Mejores puntajes (puntos sin bonus): del día y de siempre
   function records() {
@@ -2108,7 +2109,7 @@ const DIA = (() => {
     S.enCurso.snap = { sh: G.sh.map(x => ({ f: x.f.map(cloneIt), b: x.b.map(r => r.map(cloneIt)), k: x.k, belt: x.belt })), used: G.used, score: G.score, m: G.m, g: G.g };
     S.enCurso.hints = G.hints; store();
   }
-  const medalOf = (won, stars) => !won ? null : stars === 3 ? 'gold' : stars === 2 ? 'silver' : 'bronze';
+  const medalOf = (won, stars) => won && stars === 3 ? 'gold' : won && stars === 2 ? 'silver' : 'bronze';
   function done(won, stars) {
     if (!started()) return null;
     const j = S.jugadas[cur.k], medal = medalOf(won, stars);
@@ -2126,8 +2127,7 @@ const DIA = (() => {
   const medalHTML = (m, hidden) => `<div class="medalbox${hidden ? '' : ' on'}" id="rMedal"${hidden ? ' style="visibility:hidden"' : ''}>${MEDAL_SVG(m)}<b>${METAL[m]}</b></div>`;
   function endButtons() {
     const otra = P12.asociado && acceso() === 'ok';
-    // Ver estadísticas solo si hay una partida ganada hoy: una perdida no se manda a la App
-    if (APP.enIframe && mejor()) return '<button class="tag" data-a="home">Inicio</button>' + (otra ? '<button class="tag" data-a="nextdia">Otra partida</button>' : '') + '<button class="tag red" data-a="stats">Ver estadísticas</button>';
+    if (APP.enIframe) return '<button class="tag" data-a="home">Inicio</button>' + (otra ? '<button class="tag" data-a="nextdia">Otra partida</button>' : '') + '<button class="tag red" data-a="stats">Ver estadísticas</button>';
     return '<button class="tag" data-a="home">Inicio</button>' + (otra ? '<button class="tag red" data-a="nextdia">Otra partida</button>' : '');
   }
   // la partida de hoy ya se jugó (no Asociado): se ve su resultado
