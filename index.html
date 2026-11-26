@@ -919,6 +919,13 @@ const P12 = {
   enviar(ev, datos) { if (TEST || /[?&]debug/.test(location.search)) console.log('[P12]', ev, datos); }
 };
 const asociate = () => window.open(APP.URL_ASOCIATE, '_blank', 'noopener');
+// Aventura: los niveles 1 a 10 son para todos; desde el 11, solo Asociados
+const AV_LIBRES = 10;
+const avLibre = n => P12.asociado || n <= AV_LIBRES;
+const AV_ASO = 'Los niveles 1 a 10 de Aventura son para todos. Desde el nivel 11, Aventura es exclusiva para Asociados de Página/12.';
+// cartel de lo exclusivo para Asociados: Asociate abre la página de Página/12 en otra pestaña, así no se pierde el juego
+const exclusivo = txt => modal(`<div class="sign"><h1>Exclusivo para Asociados</h1></div><div class="body"><p>${txt}</p>
+    <div class="btns"><button class="tag" data-a="close">Volver</button><button class="tag red" data-a="asociate">Asociate</button></div></div>`);
 
 /* ---------- sonido ---------- */
 let AC = null;
@@ -1496,8 +1503,11 @@ async function win() {
   if (G !== g0) return;
   LOG('gana', { usados: G.used, estrellas: stars, puntos: G.score });
   const last = G.proc ? G.n >= PROC.MAX : (G.n === LEVELS.length || (TEST && G.n >= TEST.to));
-  modal(resultCard(G.goal ? '¡Pedido listo!' : '¡Góndola vacía!', left, base, G.proc ? PROC.breakNote() : G.mode === 'dia' ? DIA.note : '',
+  const tope = G.proc && !avLibre(G.n + 1);   // terminó el último nivel para todos: el que sigue es de Asociados
+  modal(resultCard(G.goal ? '¡Pedido listo!' : '¡Góndola vacía!', left, base,
+    tope ? '<p>Terminaste los 10 niveles de Aventura para todos. Para jugar desde el nivel 11, asociate a Página/12.</p>' : G.proc ? PROC.breakNote() : G.mode === 'dia' ? DIA.note : '',
     G.mode === 'dia' ? DIA.endButtons()
+    : tope ? '<button class="tag" data-a="map">Niveles</button><button class="tag red" data-a="asociate">Asociate</button>'
     : `<button class="tag" data-a="retry">Reiniciar</button>${last ? (TEST ? '<button class="tag red" data-a="fin">Terminar</button>' : '<button class="tag red" data-a="map">Niveles</button>') : '<button class="tag red" data-a="next">Siguiente nivel</button>'}`));
   const card = $('#modal .card');
   const alive = () => G === g0 && card.isConnected && !$('#modal').classList.contains('off');
@@ -1544,7 +1554,7 @@ function modal(html) {
     m.classList.add('off');
     LOG('boton', { a });
     if (a === 'close') return;
-    if (a === 'asociate') return asociate();
+    if (a === 'asociate') { asociate(); if (G && G.proc && G.over && !$('#game').classList.contains('off')) PROC.map(); return; }
     if (a === 'fin') return TEST && testEnd();
     if (a === 'saltar') { LOG('saltar'); return G.n >= TEST.to ? testEnd() : startLevel(G.n + 1); }
     if (a === 'home') return HOME.show();
@@ -1946,6 +1956,7 @@ PROC = (() => {
   // Rejugar un nivel ganado. Si se ganó antes de que se guardaran los niveles (antes del 24/11/2026),
   // se arma uno nuevo para ese número la primera vez y queda fijo desde entonces.
   async function replay(n) {
+    if (!avLibre(n)) return exclusivo(AV_ASO);
     if (!S.lv[n]) {
       modal(`<div class="sign"><h1>Nivel ${n}</h1></div><div class="body"><div class="stars"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
       const L = await make(n); L.n = n; S.lv[n] = L; store();
@@ -1953,6 +1964,7 @@ PROC = (() => {
     startLevel(n, false, S.lv[n], 'av');
   }
   async function play(quiet) {
+    if (!avLibre(S.n)) return exclusivo(AV_ASO);
     if (!S.cur) {
       modal(`<div class="sign"><h1>Nivel ${S.n}</h1></div><div class="body"><div class="stars"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
       while (!S.cur && S.n <= MAX) await prepare();                             // si había otro nivel armándose, espero y armo el actual
@@ -2006,6 +2018,7 @@ PROC = (() => {
       else if ((n - 1) % 5 === 0) h += '</div><div class="row">';
       if (n > last) { h += `<button class="tag lvl lock q" disabled aria-label="Nivel cerrado"><b>?</b>${stars(0)}</button>`; continue; }
       if (n < S.n) h += tile(n, ' done', num(n) + stars(S.done[n] || 0), false);
+      else if (n === S.n && !avLibre(n)) h += tile(n, ' lock aso', lockIco + num(n) + stars(0), false);
       else if (n === S.n) h += tile(n, ' cur', num(n) + stars(0), false);
       else h += tile(n, ' lock', lockIco + num(n) + stars(0), true);
     }
@@ -2013,8 +2026,9 @@ PROC = (() => {
     box.innerHTML = h;
     const cur = box.querySelector('.lvl.cur');
     if (cur) cur.onclick = () => play();
+    box.querySelectorAll('.lvl.aso').forEach(b => b.onclick = () => exclusivo(AV_ASO));
     box.querySelectorAll('.lvl.done').forEach(b => b.onclick = () => replay(+b.dataset.n));
-    show('#map'); (cur || box.querySelector('.lvl:last-of-type')).scrollIntoView({ block: 'center' });
+    show('#map'); (cur || box.querySelector('.lvl.aso') || box.querySelector('.lvl:last-of-type')).scrollIntoView({ block: 'center' });
     prepare();
   }
   function reset() { S = fresh(); pending = null; store(); }
@@ -2157,9 +2171,6 @@ const HOME = (() => {
   const lockIco = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
   // la primera vez que se entra a cualquiera de los dos modos, primero se ve Cómo jugar
   const enter = fn => P.tut ? fn() : TUT.run(fn, false);
-  // cartel de lo exclusivo para Asociados: Asociate abre la página de Página/12 en otra pestaña, así no se pierde el juego
-  const exclusivo = txt => modal(`<div class="sign"><h1>Exclusivo para Asociados</h1></div><div class="body"><p>${txt}</p>
-    <div class="btns"><button class="tag" data-a="close">Volver</button><button class="tag red" data-a="asociate">Asociate</button></div></div>`);
   $('#btnDia').onclick = () => {
     const ac = DIA.acceso();
     if (ac === 'archivo') return exclusivo('Los desafíos de días anteriores son exclusivos para Asociados de Página/12.');
@@ -2168,7 +2179,6 @@ const HOME = (() => {
     enter(() => DIA.play());
   };
   $('#btnAv').onclick = () => {
-    if (!P12.asociado) return exclusivo('Aventura es exclusiva para Asociados de Página/12, que además pueden repetir la Partida del día y jugar los días anteriores.');
     enter(() => PROC.map());
   };
   $('#btnHome').onclick = () => show_();
@@ -2189,9 +2199,9 @@ const HOME = (() => {
     $('#btnDia').innerHTML = ac === 'archivo' ? lockIco + 'Partida del día' : 'Partida del día';
     const quedan = ac === 'futuro' ? 'Este desafío todavía no está disponible.' : ac === 'archivo' ? 'Solo Asociados' : n === 0 ? 'Ya jugaste hoy. Mañana hay una partida nueva.' : '';
     $('#diaNote').textContent = [quedan, best && ac === 'ok' ? `Tu mejor puntaje: ${best}` : ''].filter(Boolean).join(' · ');
-    $('#btnAv').innerHTML = P12.asociado ? 'Aventura' : lockIco + 'Aventura';
+    $('#btnAv').innerHTML = 'Aventura';
     const S = PROC.S;
-    $('#avNote').textContent = !P12.asociado ? 'Solo Asociados' : S.n > 1 ? `Nivel ${Math.min(S.n, PROC.MAX)} · ${PROC.barrioOf(Math.min(S.n, PROC.MAX)).name}` : '';
+    $('#avNote').textContent = S.n > 1 && !avLibre(S.n) ? 'Desde el nivel 11: solo Asociados' : S.n > 1 ? `Nivel ${Math.min(S.n, PROC.MAX)} · ${PROC.barrioOf(Math.min(S.n, PROC.MAX)).name}` : '';
     $('#modal').classList.add('off');
     show('#home');
   }
