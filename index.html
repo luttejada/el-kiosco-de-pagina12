@@ -271,7 +271,7 @@ button.tag:disabled{opacity:.5}
 .vrow{position:relative;display:flex;justify-content:space-around;align-items:flex-end;height:clamp(70px,13vh,120px);padding:0 6px 13px}
 .vrow::after{content:"";position:absolute;left:0;right:0;bottom:0;height:13px;border-radius:3px;
   background:linear-gradient(#d99a5b,var(--wood) 45%,var(--wood-d));border-bottom:3px solid var(--wood-dd);box-shadow:0 4px 5px rgba(0,0,0,.35)}
-.vi{position:relative;z-index:1;height:100%;aspect-ratio:2/3;transform-origin:50% 100%;cursor:pointer}
+.vi{position:relative;z-index:1;height:100%;aspect-ratio:2/3;transform-origin:50% 100%;pointer-events:none}
 .vi .bob{width:100%;height:100%;transform-origin:50% 100%;animation:var(--a) var(--d) ease-in-out var(--l) infinite}
 .vi img{width:100%;height:100%;object-fit:contain;object-position:50% 100%;display:block;pointer-events:none;-webkit-user-drag:none;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
 .vi.hop{animation:hop .5s cubic-bezier(.3,1.4,.5,1)}
@@ -294,9 +294,9 @@ button.tag:disabled{opacity:.5}
   #game>.tips{grid-column:1;grid-row:5;align-self:center}
   #game>.tips>.side{position:static;margin:0;flex:none}
   #game>.tips>.bubble.side{display:block;background:#fbf3dc;border:0;border-left:5px solid var(--red);border-radius:4px;box-shadow:none;padding:10px 12px 10px 14px}
-  #home{display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:auto 1fr}
+  #home{display:grid;grid-template-columns:1fr 1.15fr;grid-template-rows:auto 1fr}
   #home>.top{grid-column:1/-1}
-  #home .vitrina{padding:10px 10px 20px 24px}
+  #home .vitrina{padding:10px 24px 20px 10px}
   #home .vrow{height:clamp(64px,22vh,130px)}
   #home .menu{padding:10px 28px 20px}
   #mapScroll{display:grid;grid-template-columns:1fr 1fr;column-gap:18px;align-content:start}
@@ -421,6 +421,7 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
   #game>.bottom .tag{flex:1 1 0;max-width:none;padding:0 4px;height:min(78%,52px)}
   #home>.top,#map>.top{padding-left:6.6%;padding-right:6.4%}
   #home .vitrina{padding-left:9%;padding-right:9%}
+  #home .menu{padding:28px 11% 8px}
   #map .scroll{padding:0 8% 16px}
 }
 /* inicio: el cartel del nombre va centrado y Configuración a la derecha */
@@ -472,7 +473,7 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
   #game>.bottom .tag{flex:none;width:100%;max-width:none;height:auto;min-height:0;aspect-ratio:524/180;font-size:clamp(15px,1.5vw,22px);padding:0 0 1%}
 
   /* ---------- inicio ---------- */
-  #home{grid-template-columns:1.2fr 1fr;grid-template-rows:auto 1fr}
+  #home{grid-template-columns:1fr 1.2fr;grid-template-rows:auto 1fr}
   #home>.top{grid-column:1/-1;height:clamp(64px,17vh,130px);padding:12px 0 0}
   #home>.top .sp{width:auto;height:100%}
   #home>.top .cfg{right:0;top:12px}
@@ -519,13 +520,13 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
     <section id="home" class="screen">
       <div class="top"><div class="sp"></div>
         <button class="tag iconbtn cfg" aria-label="Configuración"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
-      <div class="vitrina" id="vitrina" aria-hidden="true"></div>
       <div class="menu">
         <button class="tag red modebtn" id="btnDia">Partida del día</button>
         <p class="note" id="diaNote"></p>
         <button class="tag modebtn" id="btnAv">Aventura</button>
         <p class="note" id="avNote"></p>
       </div>
+      <div class="vitrina" id="vitrina" aria-hidden="true"></div>
     </section>
     <!-- MAPA DE NIVELES (Aventura) -->
     <section id="map" class="screen off">
@@ -2182,16 +2183,12 @@ const HOME = (() => {
     enter(() => PROC.map());
   };
   $('#btnHome').onclick = () => show_();
-  // vidriera: 2 estantes con 4 productos al azar cada uno; cambian cada vez que se vuelve al inicio
+  // vidriera (solo adorno, no se toca): 2 estantes con 4 productos al azar cada uno; cambian cada vez que se vuelve al inicio
   function vitrina() {
     const ts = Object.keys(NAMES).sort(() => Math.random() - .5).slice(0, 8);
     const it = t => `<div class="vi" data-t="${t}" style="--a:${ANIM[t] || 'bob'};--d:${(2.2 + Math.random() * 1.6).toFixed(2)}s;--l:${(-Math.random() * 3).toFixed(2)}s"><div class="bob"><img src="${SPR(t)}" alt=""></div></div>`;
     $('#vitrina').innerHTML = [ts.slice(0, 4), ts.slice(4)].map(r => `<div class="vrow">${r.map(it).join('')}</div>`).join('');
   }
-  $('#vitrina').addEventListener('pointerdown', e => {
-    const v = e.target.closest('.vi'); if (!v) return;
-    v.classList.remove('hop'); v.offsetWidth; v.classList.add('hop'); sfx.pick();
-  });
   function show_() {
     vitrina();
     const n = DIA.left(), best = DIA.records().siempre.puntos, ac = DIA.acceso();
