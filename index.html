@@ -402,7 +402,8 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
   text-shadow:0 1px 0 #b0601c,1px 1px 0 #3a1606,-1px 1px 0 #3a1606,1px -1px 0 #3a1606,-1px -1px 0 #3a1606,0 2px 0 #3a1606}
 #game>.bottom .tag.red{background-image:url(skin/img/hud/boton-pista.webp)}
 #game>.bottom .tag .icon{display:none}
-#game>.bottom .tag span{margin-left:.25em;font-family:'Alfa Slab One',Georgia,serif;font-weight:400;font-variant-numeric:lining-nums}
+/* Pistas: 3 — texto y número en un solo bloque, así comparten la línea de base; el número en Alfa Slab (cifras a la altura de las mayúsculas) */
+#game>.bottom .tag .lbl b{font-family:'Alfa Slab One',Georgia,serif;font-weight:400;font-size:.95em}
 #game>.bottom .tag{font-variant-numeric:lining-nums}
 
 /* consejos: papel claro con filete rojo (se leen sobre el azul) */
@@ -585,7 +586,7 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
           Deshacer</button>
         <button class="tag red" id="btnHint">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>
-          Pistas: <span id="hHints">3</span></button>
+          <span class="lbl">Pistas: <b id="hHints">3</b></span></button>
       </div>
     </section>
   </div>
@@ -1203,7 +1204,6 @@ function render(instant) {
   });
   hud();
 }
-const cfgVis = () => { $('#btnCfg').style.visibility = G && G.mode === 'dia' && !G.over ? 'hidden' : ''; };
 function hud() {
   const left = G.L.moves - G.used;
   $('#hLvl').textContent = G.mode === 'tut' ? '–' : G.n;
@@ -1220,7 +1220,7 @@ function hud() {
     $('.bar').querySelectorAll('.mk').forEach(e => e.classList.toggle('off', G.used > +e.dataset.s));
   } else $('#hBar').style.width = (100 * (1 - leftItems / G.total)) + '%';
   $('#hLvlBox').hidden = G.mode === 'dia'; $('#hLvlBox').parentNode.classList.toggle('sinlvl', G.mode === 'dia');   // la Partida del día es siempre la misma góndola: no lleva número
-  cfgVis();
+
   if (G.goal) { $('#hOrderN').textContent = `${Math.min(G.g, G.goal.n)}/${G.goal.n}`; $('#hOrder').classList.toggle('done', G.g >= G.goal.n); }
 }
 const isOpen = i => G.sh[i].k <= G.m && !G.lock.has(i) && (!G.sh[i].belt || cartVisible(i));
@@ -1572,7 +1572,6 @@ function lose(why) {
   G.over = true;
   if (G.proc) PROC.done(false);
   if (G.mode === 'dia') G.medal = DIA.done(false, 0);
-  cfgVis();
   modal(resultCard(why === 'moves' ? 'Sin movimientos' : why === 'quit' ? 'Partida terminada' : 'Sin lugar libre', G.L.moves - G.used, G.score,
     (why === 'stuck' ? '<p>Ningún producto se puede mover. Dejá lugar libre en algún estante.</p>' : '') + (G.mode === 'dia' ? DIA.note : ''),
     G.mode === 'dia' ? DIA.endButtons()
@@ -2349,8 +2348,8 @@ const CFG = (() => {
     // en plena Partida del día no se abre Cómo jugar (usa la pantalla de juego y cortaría la partida)
     const midDia = G && G.mode === 'dia' && !G.over && !$('#game').classList.contains('off');
     modal(`<div class="sign"><h1>Configuración</h1></div><div class="body">
-      ${midDia ? '' : '<button class="tag cfgbtn" id="cfgTut">Cómo jugar</button>'}
-      ${midDia ? '' : '<button class="tag cfgbtn" id="cfgReset">Borrar progreso</button>'}
+      <button class="tag cfgbtn" id="cfgTut">Cómo jugar</button>
+      <button class="tag cfgbtn" id="cfgReset">Borrar progreso</button>
       ${P12.prueba ? `<div class="cfgsec">Debug</div>
       <button class="tag cfgbtn" id="cfgAso">Asociado: ${P12.asociado ? 'SÍ' : 'NO'}</button>
       <button class="tag cfgbtn" id="cfgTutLen">Cómo jugar: ${TUT.largo() ? 'largo' : 'corto'}</button>
@@ -2358,7 +2357,8 @@ const CFG = (() => {
       ${midDia ? '' : '<button class="tag cfgbtn" id="cfgDia">Reiniciar Partida del día</button>'}` : ''}
       <div class="btns"><button class="tag red" data-a="close">Cerrar</button></div></div>`);
     if ($('#cfgTut')) $('#cfgTut').onclick = () => {
-      const back = !$('#home').classList.contains('off') ? HOME.show : (G && G.mode === 'test') ? () => { buildMap(); show('#map'); } : P12.asociado ? PROC.map : HOME.show;
+      const midDia = G && G.mode === 'dia' && !G.over && !$('#game').classList.contains('off');   // en plena Partida del día: al terminar Cómo jugar, la partida sigue donde quedó
+      const back = midDia ? () => DIA.play() : !$('#home').classList.contains('off') ? HOME.show : (G && G.mode === 'test') ? () => { buildMap(); show('#map'); } : P12.asociado ? PROC.map : HOME.show;
       TUT.run(back, true);
     };
     if ($('#cfgAso')) $('#cfgAso').onclick = () => {
@@ -2389,7 +2389,7 @@ const CFG = (() => {
         <div class="btns"><button class="tag" data-a="close">Cancelar</button><button class="tag red" id="cfgResetOk">Borrar</button></div></div>`);
       $('#cfgResetOk').onclick = () => {
         // también se olvida que viste Cómo jugar y las tarjetas de las mecánicas
-        PROC.reset(); P.best = {}; P.open = 1; P.tut = false; P.vistas = {}; save();
+        PROC.reset(); P.best = {}; P.open = 1; P.tut = false; P.avIntro = false; P.vistas = {}; save();
         // las partidas de hoy solo se borran en la prueba: dentro de Página/12 sería jugar la Partida del día de nuevo
         if (P12.prueba) { DIA.reset(); DIA.resetRecords(); }
         $('#modal').classList.add('off');
