@@ -370,10 +370,11 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
 .shelf .plank::after{display:none}
 .shelf.target{box-shadow:0 0 0 3px #ffd75a,0 0 14px rgba(255,215,90,.5)}
 @keyframes glow{0%,100%{box-shadow:0 0 0 3px rgba(255,215,90,.2)}50%{box-shadow:0 0 0 3px #ffd75a,0 0 14px rgba(255,215,90,.5)}}
-/* persiana: cartel rojo «CERRADO»; el juego escribe cuántas ventas faltan debajo */
+/* persiana: cartel rojo «CERRADO»; el juego escribe cuántas ventas faltan debajo, centrado en el hueco
+   libre del cartel (del 45 % al 86 % del alto de persiana.png) */
 #board .shutter{left:0;right:0;top:0;bottom:0;border:0;border-radius:0;box-shadow:none;
-  background:url(skin/img/gondola/persiana.webp) 0 0/100% 100% no-repeat;align-items:flex-start;padding-top:52%}
-#board .shutter .tag{background:none;border:0;box-shadow:none;min-height:0;padding:0;color:#f6e7c4;
+  background:url(skin/img/gondola/persiana.webp) 0 0/100% 100% no-repeat}
+#board .shutter .tag{position:absolute;left:0;right:0;top:65.5%;transform:translateY(-50%);background:none;border:0;box-shadow:none;min-height:0;padding:0;color:#f6e7c4;
   font-family:'Playfair Display',Georgia,serif;font-weight:800;font-size:clamp(10px,2.6vw,12px);letter-spacing:.3px;line-height:1.05;text-shadow:0 1px 0 var(--fink),0 0 1px var(--fink)}
 #board .shutter .tag b{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(14px,4.2vw,18px);color:#ffe08a}
 /* rotativa: cinta de madera con filete dorado; los pliegos usan el cubículo celeste */
@@ -509,7 +510,6 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
   #game>.bar{margin-top:8px}
   #game>.tips{margin-top:8px}
   #game>.tips>.bubble.side,#game>.tips>.tutbox.side{font-size:13px;padding:6px 8px 6px 10px}
-  #board .shutter{padding-top:46%}
   #board .shutter .tag{font-size:10px;line-height:1}
   #board .shutter .tag b{font-size:13px}
   #home>.top{height:clamp(52px,15vh,80px);padding-top:8px}
@@ -1713,7 +1713,7 @@ function testEnd() {
   };
 }
 
-/* ---------- Aventura: niveles que se arman según cómo jugás, ordenados en barrios ----------
+/* ---------- Aventura: niveles en barrios de 20: del 1 al 10 fijos y fáciles, después una curva fija por barrio ----------
    1) Niveles 1 a 10 (los gratis): fijos e iguales para todos, fáciles y en subida (los niveles 1 a 10 de la lista original:
       de 1x3 a 3x3, primero los productos de atrás y después las estrellas). No los toca el algoritmo; sirven para calibrarlo.
       Si perdés uno, se repite con 2 movimientos más.
