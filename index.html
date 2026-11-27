@@ -1708,13 +1708,15 @@ function testEnd() {
 }
 
 /* ---------- Aventura: niveles que se arman según cómo jugás, ordenados en barrios ----------
-   1) Tres niveles fijos de calibración, iguales para todos (los niveles 3, 6 y 10 de la lista).
-   2) Después, niveles generados según cómo jugaste: la meta es que las 3 estrellas estén a tu alcance.
+   1) Niveles 1 a 10 (los gratis): fijos e iguales para todos, fáciles y en subida (los niveles 1 a 10 de la lista original:
+      de 1x3 a 3x3, primero los productos de atrás y después las estrellas). No los toca el algoritmo; sirven para calibrarlo.
+      Si perdés uno, se repite con 2 movimientos más.
+   2) Desde el 11, niveles generados según cómo jugaste: la meta es que las 3 estrellas estén a tu alcance.
    3) Cada barrio tiene 20 niveles. Los barrios 2 a 7 presentan una mecánica nueva; los siguientes las mezclan (GDD, sección 15).
    Reglas éticas (GDD, sección 6.4): todo se mide y se guarda solo en este dispositivo; la dificultad no depende
    de anuncios ni compras; nunca se cambia un nivel a mitad de partida; cada nivel generado tiene solución comprobada. */
 PROC = (() => {
-  const KEY = 'kiosco-proc', CAL = [3, 6, 10], AHEAD = 10, MAX = 300; // se ven 10 niveles cerrados más adelante, hasta el 300
+  const KEY = 'kiosco-proc', FIJOS = 10, FIJOS_VER = 2, AHEAD = 10, MAX = 300; // se ven 10 niveles cerrados más adelante, hasta el 300
   const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
   const ORDER = ['persiana', 'envuelto', 'rotativa', 'caja', 'caramelo', 'pedido'];
   const BARRIOS = [
@@ -1728,6 +1730,8 @@ PROC = (() => {
   let S = fresh();
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
   S.lv = S.lv || {}; // niveles ya ganados: quedan fijos en su número para rejugarlos
+  // el nivel 1 a 10 que estaba armado antes del 27/11/2026 (generado o de la calibración vieja) se cambia por el fijo
+  if (S.cur && S.n <= FIJOS && S.cur.fijo !== FIJOS_VER) S.cur = null;
   const store = () => { if (TEST) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
   // Señales del dispositivo: se leen en el momento y no se guardan.
   // Pantalla táctil chica: tope de 3x3 para que los productos no queden demasiado chicos para el dedo.
@@ -1795,9 +1799,11 @@ PROC = (() => {
 
   /* niveles */
   function calLevel(n) {
-    const src = LEVELS[CAL[n - 1] - 1];
-    return { n, cols: src.cols, rows: src.rows, par: src.par, moves: src.moves, shelves: src.shelves, wrap: src.wrap,
-      title: TITLES[CAL[n - 1]][0], volanta: NEW[n] || '', tip: TIPS[n] || null, cal: true };
+    const src = LEVELS[n - 1];
+    // estrellas fijas (las de la lista); si se pierde y se dan 2 movimientos más, las estrellas no cambian
+    const extra = src.moves - src.par;
+    return { n, cols: src.cols, rows: src.rows, par: src.par, moves: src.moves, s3: src.par + Math.floor(extra * .5), s2: src.par + Math.floor(extra * .8), shelves: src.shelves, wrap: src.wrap,
+      title: TITLES[n][0], volanta: NEW[n] || '', tip: TIPS[n] || null, cal: true, fijo: FIJOS_VER };
   }
   // Qué mecánicas usa el nivel n
   function mechsFor(n) {
@@ -1852,7 +1858,7 @@ PROC = (() => {
   // Movimientos: los suficientes para no perder jugando como venís jugando, y siempre algunos más que el límite de 2 estrellas.
   const movesFor = par => Math.min(par * 2, Math.max(s2For(par) + 2, Math.ceil(par * (S.effP + .15)) + 2));
   async function make(n) {
-    if (n <= CAL.length) return calLevel(n);
+    if (n <= FIJOS) return calLevel(n);
     const b = barrioOf(n), intro = b.nuevo && n === b.from;
     const mechs = intro ? [b.nuevo] : mechsFor(n);
     let q = intro ? introParams(n, b.nuevo) : params(n, mechs), g = await gen(q);
@@ -1937,6 +1943,7 @@ PROC = (() => {
   // se arma uno nuevo para ese número la primera vez y queda fijo desde entonces.
   async function replay(n) {
     if (!avLibre(n)) return exclusivo(AV_ASO);
+    if (n <= FIJOS) return startLevel(n, false, calLevel(n), 'av');   // los niveles 1 a 10 se rejuegan siempre como son
     if (!S.lv[n]) {
       modal(`<div class="sign"><h1>Nivel ${n}</h1></div><div class="body"><div class="stars"><span class="dots"><i></i><i></i><i></i></span></div></div>`);
       const L = await make(n); L.n = n; S.lv[n] = L; store();
@@ -1967,7 +1974,7 @@ PROC = (() => {
       // sin 3 estrellas, el próximo nivel baja más (2 estrellas: −0,05 extra; 1 estrella: −0,08)
       else S.D = clamp(S.D + clamp(.12 * (skill - .55), -.15, .15) - (stars === 2 ? .05 : stars === 1 ? .08 : 0));
       S.n++; S.cur = null; S.fails = 0;
-      if (S.n === CAL.length + 1) S.D = clamp(.2 + .5 * S.cal.reduce((a, x) => a + x, 0) / Math.max(1, S.cal.length));
+      if (S.n === FIJOS + 1) S.D = clamp(.2 + .5 * S.cal.reduce((a, x) => a + x, 0) / Math.max(1, S.cal.length));
       P12.enviar('aventura_nivel', { nivel: G.n, estrellas: stars, nivelActual: S.n, barrio: barrioOf(Math.min(S.n, MAX)).name, estrellasTotales: totalStars() });
     } else {
       S.fails++;
@@ -1977,7 +1984,7 @@ PROC = (() => {
         S.D = clamp(S.D + .12 * (0 - .55) - .08 - (S.fails >= 2 ? .12 : 0));
         if (S.fails >= 2) S.cur = null;                            // dos derrotas seguidas: otro nivel, más fácil
         else S.cur = Object.assign({}, S.cur, { moves: S.cur.moves + 2 }); // primera derrota: 2 movimientos más
-      }
+      } else if (S.cur) S.cur = Object.assign({}, S.cur, { moves: S.cur.moves + 2 }); // niveles 1 a 10: el mismo, con 2 movimientos más
     }
     store(); prepare();
   }
