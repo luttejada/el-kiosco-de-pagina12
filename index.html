@@ -284,6 +284,7 @@ button.tag:disabled{opacity:.5}
   #game>.top{grid-column:1;grid-row:1}
   #game>.hud{grid-column:1;grid-row:2;grid-template-columns:1fr 1fr}
   #game>.hud .moves{grid-column:1/-1;order:-1}
+  #game>.hud.sinpts .stat:not(.moves){grid-column:1/-1;justify-self:center;width:calc(50% - 4px)}
   #game>.bar{grid-column:1;grid-row:3}
   #game>.order{grid-column:1;grid-row:4;flex-wrap:wrap}
   #game>.bottom{grid-column:1;grid-row:5;flex-direction:column;justify-content:flex-end}
@@ -413,6 +414,7 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
   #game>.top{flex:none;height:7.4%;padding:1.3% 6.4% 0 6.6%;gap:0;align-items:flex-start;justify-content:space-between}
   #game>.hud{flex:none;height:8.2%;padding:0 6.6% 0 6.9%;gap:1.6%;grid-template-columns:196fr 236fr 196fr}
   #game>.hud .stat{min-height:0;height:100%}
+  #game>.hud.sinpts{grid-template-columns:196fr 236fr;padding:0 20.2%}   /* Aventura: sin Puntos, Nivel y Movimientos centrados */
   #game>.bar{flex:none;height:1.1%;min-height:7px;margin:.6% 7.6% auto 8%}
   #game>.order{flex:none;margin:1% 9% 0}
   #board{flex:none;height:67.2%;margin:0 5.4% 0 6.3%}
@@ -458,6 +460,7 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
   #game>.hud{grid-column:1;grid-row:3;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0;height:auto}
   #game>.hud .stat{height:auto;min-height:0;aspect-ratio:196/111;padding:4% 0 7%}
   #game>.hud .stat.moves{grid-column:1/-1;order:-1;aspect-ratio:236/111}
+  #game>.hud.sinpts .stat:not(.moves){grid-column:1/-1;justify-self:center;width:calc(50% - 4px)}
   #game>.hud .stat .k{font-size:clamp(11px,1.05vw,14px)}
   #game>.hud .stat .v{font-size:clamp(20px,2.3vw,32px)}
   #game>.hud .stat.moves .v{font-size:clamp(26px,3vw,42px)}
@@ -553,7 +556,7 @@ button.tag.red{background:var(--bermellon);border-color:#ffd75a;color:#fff3d0}
       <div class="hud">
         <div class="stat"><span class="k" id="hLvlK">Nivel</span><span class="v" id="hLvl">1</span></div>
         <div class="stat moves" id="hMovesBox"><span class="k">Movimientos</span><span class="v" id="hMoves">0</span></div>
-        <div class="stat"><span class="k">Puntos</span><span class="v" id="hScore">0</span></div>
+        <div class="stat" id="hScoreBox"><span class="k">Puntos</span><span class="v" id="hScore">0</span></div>
       </div>
       <div class="bar" aria-hidden="true"><i id="hBar"></i></div>
       <div class="order" id="hOrder" hidden><span>Pedido</span><img id="hOrderImg" alt=""><b id="hOrderN">0/3</b></div>
@@ -1182,6 +1185,7 @@ function hud() {
   $('#hMoves').textContent = left;
   $('#hMovesBox').classList.toggle('low', left <= 3);
   $('#hScore').textContent = G.score;
+  $('#hScoreBox').hidden = G.mode === 'av'; $('#hScoreBox').parentNode.classList.toggle('sinpts', G.mode === 'av');   // en Aventura los puntos no cuentan para nada: las estrellas salen de los movimientos
   $('#hHints').textContent = G.hints;
   $('#btnUndo').disabled = !G.hist.length || G.over;
   $('#btnHint').disabled = G.hints <= 0;
@@ -1342,7 +1346,7 @@ async function resolveShelf(i, g0) {
       const pts = G.L.pts || 100;   // en la Partida del día vale más si el nivel tiene mecánicas
       LOG('trio', { i, tipo: sold }); G.score += pts; G.m++; x.f = [null, null, null];
       if (G.goal && sold === G.goal.t) G.g++;
-      floatText(i, '+' + pts);
+      if (G.mode !== 'av') floatText(i, '+' + pts);
       await wait(300);
       if (G !== g0) return;
       trio.forEach(it => { const el = els.get(it.id); if (el) el.remove(); els.delete(it.id); });
@@ -1443,9 +1447,9 @@ function starsFor() {
 // Arriba los mismos contadores del juego (movimientos y puntos), al medio las estrellas, abajo los botones.
 function resultCard(title, movesLeft, score, extra, btns) {
   return `<div class="sign"><h1>${title}</h1><div class="sub">${G.mode === 'dia' ? 'Partida' : 'Nivel'} ${G.n}</div></div><div class="body">
-    <div class="hud res" id="rRow" style="position:relative">
+    <div class="hud res${G.mode === 'av' ? ' one' : ''}" id="rRow" style="position:relative">
       <div class="stat moves${movesLeft === 0 ? ' zero' : ''}" id="rMovesBox"><span class="k">Movimientos</span><span class="v" id="rMoves">${movesLeft}</span></div>
-      <div class="stat"><span class="k">Puntos</span><span class="v" id="rScore">${score}</span></div></div>
+      ${G.mode === 'av' ? '' : `<div class="stat"><span class="k">Puntos</span><span class="v" id="rScore">${score}</span></div>`}</div>
     ${G.mode === 'dia' ? (G.medal ? DIA.medalHTML(G.medal, !!G.won) : '') : `<div class="stars" id="rStars">${[1, 2, 3].map(() => STAR(false)).join('')}</div>`}
     ${extra || ''}
     <div class="btns">${btns}</div></div>`;
@@ -1492,7 +1496,8 @@ async function win() {
   const card = $('#modal .card');
   const alive = () => G === g0 && card.isConnected && !$('#modal').classList.contains('off');
   await wait(550);
-  // cada movimiento que sobró pasa a los puntos (+20)
+  // cada movimiento que sobró pasa a los puntos (+20). En Aventura no hay puntos: se pasa directo a las estrellas
+  if (G.mode !== 'av') {
   const step = Math.max(55, Math.min(140, 1400 / Math.max(1, left)));
   for (let k = 1; k <= left; k++) {
     if (!alive()) return;
@@ -1503,6 +1508,7 @@ async function win() {
   if (!alive()) return;
   $('#rMovesBox').classList.add('zero');
   await wait(250);
+  }
   // Partida del día: aparece la medalla. Aventura: se llenan las estrellas ganadas
   if (G.mode === 'dia') { const md = $('#rMedal'); if (md) { md.style.visibility = ''; md.classList.add('on'); } return; }
   for (let i = 0; i < stars; i++) {
@@ -1711,12 +1717,12 @@ function testEnd() {
    1) Niveles 1 a 10 (los gratis): fijos e iguales para todos, fáciles y en subida (los niveles 1 a 10 de la lista original:
       de 1x3 a 3x3, primero los productos de atrás y después las estrellas). No los toca el algoritmo; sirven para calibrarlo.
       Si perdés uno, se repite con 2 movimientos más.
-   2) Desde el 11, niveles generados según cómo jugaste: la meta es que las 3 estrellas estén a tu alcance.
+   2) Desde el 11, niveles generados con una curva fija por barrio, iguales para todos (ver paramsAv, 27/11/2026): en los altos se espera perder.
    3) Cada barrio tiene 20 niveles. Los barrios 2 a 7 presentan una mecánica nueva; los siguientes las mezclan (GDD, sección 15).
    Reglas éticas (GDD, sección 6.4): todo se mide y se guarda solo en este dispositivo; la dificultad no depende
    de anuncios ni compras; nunca se cambia un nivel a mitad de partida; cada nivel generado tiene solución comprobada. */
 PROC = (() => {
-  const KEY = 'kiosco-proc', FIJOS = 10, FIJOS_VER = 2, AHEAD = 10, MAX = 300; // se ven 10 niveles cerrados más adelante, hasta el 300
+  const KEY = 'kiosco-proc', FIJOS = 10, FIJOS_VER = 2, AV_VER = 2, AHEAD = 10, MAX = 300; // se ven 10 niveles cerrados más adelante, hasta el 300
   const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
   const ORDER = ['persiana', 'envuelto', 'rotativa', 'caja', 'caramelo', 'pedido'];
   const BARRIOS = [
@@ -1731,7 +1737,7 @@ PROC = (() => {
   try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
   S.lv = S.lv || {}; // niveles ya ganados: quedan fijos en su número para rejugarlos
   // el nivel 1 a 10 que estaba armado antes del 27/11/2026 (generado o de la calibración vieja) se cambia por el fijo
-  if (S.cur && S.n <= FIJOS && S.cur.fijo !== FIJOS_VER) S.cur = null;
+  if (S.cur && (S.n <= FIJOS ? S.cur.fijo !== FIJOS_VER : S.cur.av !== AV_VER)) S.cur = null;   // y los del 11 en adelante, por los de la curva fija
   const store = () => { if (TEST) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
   // Señales del dispositivo: se leen en el momento y no se guardan.
   // Pantalla táctil chica: tope de 3x3 para que los productos no queden demasiado chicos para el dedo.
@@ -1806,8 +1812,8 @@ PROC = (() => {
       title: TITLES[n][0], volanta: NEW[n] || '', tip: TIPS[n] || null, cal: true, fijo: FIJOS_VER };
   }
   // Qué mecánicas usa el nivel n
-  function mechsFor(n) {
-    const b = barrioOf(n), k = n - b.from + 1, r = Math.random;
+  function mechsFor(n, r) {
+    const b = barrioOf(n), k = n - b.from + 1;
     if (b.nuevo) {
       if (k <= 5) return [b.nuevo];                                // niveles 1 a 5 del barrio: solo la mecánica nueva
       const old = ORDER.slice(0, ORDER.indexOf(b.nuevo)).sort(() => r() - .5);
@@ -1830,6 +1836,7 @@ PROC = (() => {
     q.goal = has('pedido') ? (intro ? 2 : d > .5 ? 3 : 2) : 0;
     return q;
   }
+  // Partida del día adaptativa (solo debug): usa el modelo del jugador
   function params(n, mechs) {
     let d = S.D;
     if (n % 5 === 0) d -= .15;                                   // nivel de respiro cada 5
@@ -1856,22 +1863,40 @@ PROC = (() => {
   // las 3 estrellas se facilitan con niveles más fáciles (D), no regalando movimientos.
   const s3For = par => par + Math.max(2, Math.round(par * .25)), s2For = par => par + Math.max(4, Math.round(par * .5));
   // Movimientos: los suficientes para no perder jugando como venís jugando, y siempre algunos más que el límite de 2 estrellas.
-  const movesFor = par => Math.min(par * 2, Math.max(s2For(par) + 2, Math.ceil(par * (S.effP + .15)) + 2));
+  /* Aventura desde el nivel 11 (27/11/2026): cada barrio es un pack de 20 niveles con una curva fija, igual para todos.
+     No depende de cómo juega cada uno ni del dispositivo (misma góndola en celular y compu, como máximo 3x3).
+     La curva sube, respira y cierra difícil: en los niveles altos se espera perder. Los barrios siguientes arrancan más arriba.
+     Al perder se repite el mismo nivel; cada 3 derrotas seguidas da 2 movimientos más (las estrellas no cambian). */
+  const CURVA = [.15, .25, .35, .3, .45, .5, .4, .55, .65, .8, .35, .45, .55, .5, .65, .7, .6, .8, .9, 1];
+  const tension = n => CURVA[(n - 1) % 20];
+  const azar = seed => () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  function paramsAv(n, mechs, r) {
+    const bi = BARRIOS.indexOf(barrioOf(n)), t = tension(n);
+    const d = clamp(.3 + .03 * Math.min(bi, 10) + .4 * t - .06 * mechs.length);
+    const bands = [[2, 2, 0, .15], [2, 3, .15, .35], [3, 3, .35, 1.001]];
+    const [cols, rows, lo, hi] = bands[bands.findIndex(x => d < x[3])], f = clamp((d - lo) / (hi - lo)), Sx = cols * rows;
+    const names = Object.keys(NAMES); for (let i = names.length - 1; i > 0; i--) { const j = (r() * (i + 1)) | 0; [names[i], names[j]] = [names[j], names[i]]; }
+    return mechQ({ d, seed: (r() * 1e9) | 0, cols, rows, types: Math.min(21, Math.round(Sx * (1 + .25 * f))), layers: d > .35 ? 3 : 2,
+      free: clamp(Math.round(Sx * (.75 - .4 * f)), 3, 7), W: Sx <= 6 ? 120 : 80, minRatio: d < .1 ? 0 : 1.6, pool: names }, mechs, d, false);
+  }
+  // Movimientos: margen sobre el mínimo que se achica con la curva (fácil: +58 %; el más difícil del barrio: +20 %, menos en barrios avanzados)
+  const movesAv = (n, par) => par + Math.max(3, Math.ceil(par * Math.max(.12, .65 - .45 * tension(n) - .01 * Math.min(BARRIOS.indexOf(barrioOf(n)), 8))));
   async function make(n) {
     if (n <= FIJOS) return calLevel(n);
+    const r = azar(90210 + n);
     const b = barrioOf(n), intro = b.nuevo && n === b.from;
-    const mechs = intro ? [b.nuevo] : mechsFor(n);
-    let q = intro ? introParams(n, b.nuevo) : params(n, mechs), g = await gen(q);
-    if (!g) { q = intro ? introParams(n, b.nuevo) : params(n, mechs); q.seed++; q.minRatio = 0; g = await gen(q); }
-    if (!g) { q = params(n, []); q.minRatio = 0; g = await gen(q); }   // último recurso: sin mecánicas
-    q.pool.slice(0, q.types).forEach(t => S.seen[t] = (S.seen[t] || 0) + 1);
-    const front = [...new Set(g.sh.flatMap(x => x.f).filter(t => t && HEADS[t]))];
-    const t = front[(Math.random() * front.length) | 0] || 'diario';
+    const mechs = intro ? [b.nuevo] : mechsFor(n, r);
+    let q = intro ? introParams(n, b.nuevo) : paramsAv(n, mechs, r), g = await gen(q);
+    if (!g) { q.seed++; q.minRatio = 0; g = await gen(q); }
+    if (!g) { q = paramsAv(n, [], r); q.minRatio = 0; g = await gen(q); }   // último recurso: sin mecánicas
+    const front = [...new Set(g.sh.flatMap(x => x.f).filter(t => t && HEADS[t]))].sort();
+    const t = front[(r() * front.length) | 0] || 'diario';
     // lo que el jugador no puede ver (envueltos) o tiene que esperar (rotativa) suma movimientos
     const extra = Math.ceil((q.wraps || 0) / 2) + (q.belt ? 1 : 0);
-    const L = { n, cols: q.cols, rows: q.rows, par: g.par, s3: s3For(g.par) + extra, s2: s2For(g.par) + extra,
-      moves: (intro ? g.par * 2 + 2 : movesFor(g.par)) + extra, shelves: g.sh, wrap: g.wrap, belt: g.belt, goal: g.goal, D: +q.d.toFixed(2), mechs,
-      title: HEADS[t][(Math.random() * 2) | 0], volanta: '', tip: null };
+    const moves = (intro ? g.par * 2 + 2 : movesAv(n, g.par)) + extra, mg = moves - g.par;
+    const L = { n, cols: q.cols, rows: q.rows, par: g.par, s3: g.par + Math.floor(mg * .5), s2: g.par + Math.floor(mg * .8),
+      moves, shelves: g.sh, wrap: g.wrap, belt: g.belt, goal: g.goal, D: +q.d.toFixed(2), mechs, av: AV_VER,
+      title: HEADS[t][(r() * 2) | 0], volanta: '', tip: null };
     if (intro) Object.assign(L, { title: MECH[b.nuevo].title, volanta: MECH[b.nuevo].vol, tip: MECH[b.nuevo].tip });
     else if (n === b.from) L.volanta = 'Barrio nuevo: ' + b.name;
     return L;
@@ -1980,10 +2005,8 @@ PROC = (() => {
       S.fails++;
       // perder con todos los movimientos usados = necesitaba más que los que tenía
       S.effP = Math.min(2, S.effP * .65 + (G.L.moves / G.L.par + .15) * .35);
-      if (!cal) {
-        S.D = clamp(S.D + .12 * (0 - .55) - .08 - (S.fails >= 2 ? .12 : 0));
-        if (S.fails >= 2) S.cur = null;                            // dos derrotas seguidas: otro nivel, más fácil
-        else S.cur = Object.assign({}, S.cur, { moves: S.cur.moves + 2 }); // primera derrota: 2 movimientos más
+      if (!cal) {                                                  // el mismo nivel; cada 3 derrotas seguidas, 2 movimientos más
+        if (S.cur && S.fails % 3 === 0) S.cur = Object.assign({}, S.cur, { moves: S.cur.moves + 2 });
       } else if (S.cur) S.cur = Object.assign({}, S.cur, { moves: S.cur.moves + 2 }); // niveles 1 a 10: el mismo, con 2 movimientos más
     }
     store(); prepare();
